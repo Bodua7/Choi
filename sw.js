@@ -1,7 +1,12 @@
 // Service Worker cho PWA "Zombie Commander" - cache-first với network fallback,
 // giúp Treo Máy/mở lại game hoạt động ổn định kể cả mất mạng tạm thời.
-const CACHE = 'zc-shell-v1';
-const SHELL_FILES = ['./', './index.html', './manifest.json'];
+const CACHE = 'zc-shell-v3';
+const SHELL_FILES = [
+    './',
+    './index.html',
+    './manifest.json',
+    './generated_images/zombie-commander-anime.png'
+];
 
 self.addEventListener('install', (e) => {
     e.waitUntil(
