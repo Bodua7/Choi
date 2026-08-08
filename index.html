@@ -1,0 +1,3441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <title>Zombie Commander: Cyber Ascension - Extended Edition</title>
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlpvbWJpZSBDb21tYW5kZXIiLAogICJzaG9ydF9uYW1lIjogIlpvbWJpZUNvbW1hbmRlciIsCiAgInN0YXJ0X3VybCI6ICIuL2luZGV4Lmh0bWwiLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwZjE3MmEiLAogICJ0aGVtZV9jb2xvciI6ICIjMGYxNzJhIgp9">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #020617;
+            --panel-bg: #0f172a;
+            --border-color: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --accent-amber: #f59e0b;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: #f8fafc;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app-wrapper {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        /* VIEWPORT 3D (40vh) */
+        #viewport-container {
+            width: 100%;
+            height: 40vh;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #damage-text-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 15;
+        }
+
+        #joystick-zone {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            touch-action: none;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #joystick-stick {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            box-shadow: 0 0 10px var(--accent-blue);
+            transition: transform 0.05s ease-out;
+        }
+
+        #hud-top-info {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hud-badge {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: bold;
+            color: var(--accent-blue);
+            backdrop-filter: blur(4px);
+        }
+
+        #player-hp-bar {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 120px;
+            background: rgba(15, 23, 42, 0.85);
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid var(--accent-blue);
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+
+        #boss-hp-bar {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 75%;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--accent-red);
+            z-index: 10;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .hp-container {
+            height: 6px;
+            background: #1e293b;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+
+        .hp-inner {
+            height: 100%;
+            background: var(--accent-green);
+            border-radius: 3px;
+            transition: width 0.15s ease-out;
+        }
+
+        /* CONTROL PANEL UI (60vh) */
+        #ui-panel {
+            width: 100%;
+            height: 60vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            border-top: 2px solid var(--border-color);
+            padding: 8px;
+            gap: 6px;
+        }
+
+        #resource-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            background: #020617;
+            padding: 6px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .res-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--panel-bg);
+            padding: 4px;
+            border-radius: 4px;
+            border: 1px solid #1e293b;
+        }
+
+        .res-label {
+            color: var(--text-muted);
+            font-size: 8px;
+            font-weight: bold;
+        }
+
+        .res-val {
+            color: var(--accent-blue);
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 1px;
+        }
+
+        #nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+
+        #nav-tabs .tab-btn {
+            flex: 1 1 30%;
+            min-width: 60px;
+        }
+
+        .zone-item, .building-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: #0f172a;
+        }
+
+        .zone-item.active-zone {
+            border-color: var(--accent-green);
+        }
+
+        .zone-name { font-size: 10px; font-weight: bold; color: #e2e8f0; }
+        .zone-desc { font-size: 8px; color: var(--text-muted); }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 4px;
+            background: #1e293b;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-blue);
+            color: #020617;
+            border-color: #7dd3fc;
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 2px;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .card-box {
+            background: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--accent-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--accent-green);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 10px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-action:active {
+            transform: scale(0.98);
+        }
+
+        .btn-action:disabled {
+            background: #475569;
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* NODE GRAPH SKILL TREE */
+        #skill-tree-wrapper {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            background: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .skill-node {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 2px solid #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s ease;
+            z-index: 2;
+        }
+
+        .skill-node.unlocked {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .skill-node.available {
+            border-color: var(--accent-blue);
+            animation: pulse-node 1.5s infinite alternate;
+        }
+
+        .skill-node.selected {
+            border-color: var(--accent-amber) !important;
+            transform: translate(-50%, -50%) scale(1.15);
+            z-index: 10;
+        }
+
+        @keyframes pulse-node {
+            from { box-shadow: 0 0 2px var(--accent-blue); }
+            to { box-shadow: 0 0 10px var(--accent-blue); }
+        }
+
+        /* NPC LIST ITEMS */
+        .npc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #020617;
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .npc-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .npc-name {
+            font-size: 10px;
+            font-weight: bold;
+            color: #f8fafc;
+        }
+
+        .npc-buff {
+            font-size: 8px;
+            color: var(--accent-green);
+        }
+
+        /* COMBAT LOG CONSOLE */
+        #combat-log {
+            height: 55px;
+            background: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-family: monospace;
+            font-size: 8px;
+            overflow-y: auto;
+            color: #a7f3d0;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <!-- 1. VIEWPORT 3D -->
+    <div id="viewport-container">
+        <div id="hud-top-info">
+            <div class="hud-badge" id="hud-chapter">CHAPTER 1</div>
+            <div class="hud-badge" id="hud-cp">CP: 50</div>
+            <div class="hud-badge" id="btn-open-settings" onclick="openSettings()" style="cursor:pointer;">⚙ CÀI ĐẶT</div>
+        </div>
+
+        <div id="damage-text-layer"></div>
+        
+        <div id="joystick-zone">
+            <div id="joystick-stick"></div>
+        </div>
+        
+        <div id="player-hp-bar">
+            <div style="font-size: 7px; color: #fff; font-weight: bold;">HP CHỈ HỦY</div>
+            <div class="hp-container">
+                <div id="player-hp-inner" class="hp-inner" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <div id="boss-hp-bar">
+            <div style="font-size: 8px; color: var(--accent-red); font-weight: bold; text-align: center;" id="boss-title">BOSS TRÙM KHỦNG BỐ</div>
+            <div class="hp-container">
+                <div id="boss-hp-inner" class="hp-inner" style="width: 100%; background: var(--accent-red);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. UI CONTROL PANEL -->
+    <div id="ui-panel">
+        <div id="resource-grid">
+            <div class="res-item"><span class="res-label">GỖ</span><span class="res-val" id="res-wood">0</span></div>
+            <div class="res-item"><span class="res-label">ĐÁ</span><span class="res-val" id="res-stone">0</span></div>
+            <div class="res-item"><span class="res-label">QUẶNG</span><span class="res-val" id="res-ore">0</span></div>
+            <div class="res-item"><span class="res-label">PHẾ TÍCH</span><span class="res-val" id="res-ruins">0</span></div>
+            <div class="res-item"><span class="res-label">PHẾ LIỆU</span><span class="res-val" id="res-scrap">0</span></div>
+            <div class="res-item"><span class="res-label">LINH KIỆN</span><span class="res-val" id="res-comp">0</span></div>
+            <div class="res-item"><span class="res-label">LÕI DATA</span><span class="res-val" id="res-data">0</span></div>
+            <div class="res-item"><span class="res-label">MẪU GEN</span><span class="res-val" id="res-gene">0</span></div>
+        </div>
+
+        <div id="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('main')">TỔNG QUAN</button>
+            <button class="tab-btn" onclick="switchTab('world')">THẾ GIỚI</button>
+            <button class="tab-btn" onclick="switchTab('base')">CĂN CỨ</button>
+            <button class="tab-btn" onclick="switchTab('power')">SỨC MẠNH</button>
+            <button class="tab-btn" onclick="switchTab('gear')">TRANG BỊ</button>
+            <button class="tab-btn" onclick="switchTab('battle')">CHIẾN TRƯỜNG</button>
+            <button class="tab-btn" onclick="switchTab('shop')">THƯƠNG HỘI</button>
+            <button class="tab-btn" onclick="switchTab('evo')">KỸ NĂNG</button>
+            <button class="tab-btn" onclick="switchTab('mech')">CƠ KHÍ</button>
+            <button class="tab-btn" onclick="switchTab('npc')">ĐỒNG HÀNH</button>
+        </div>
+
+        <!-- TAB MAIN -->
+        <div id="tab-main" class="tab-content active">
+            <div class="card-box">
+                <div class="card-title"><span>CỐT TRUYỆN</span></div>
+                <div id="txt-story-title" style="font-size: 10px; font-weight:bold; color: var(--accent-purple); margin-bottom:3px;"></div>
+                <div id="txt-story-text" style="font-size: 8px; color: var(--text-muted); line-height:1.5;"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>NHIỆM VỤ CHAPTER</span></div>
+                <div id="quest-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span>CHUYỂN SINH (VÔ TẬN)</span>
+                    <span id="txt-rebirth-count" style="color: var(--accent-purple);">0 lần</span>
+                </div>
+                <div style="font-size: 8px; color: var(--text-muted); margin-bottom:4px;">
+                    Reset Chapter/Tài nguyên/Công trình để nhận bonus CP &amp; tốc độ tài nguyên vĩnh viễn. Giữ lại Trang bị, Hệ Sức Mạnh, PvP, Vé, Tinh Thạch, Skin.
+                </div>
+                <div style="font-size: 8px; color: var(--accent-blue); margin-bottom:4px;">Bonus hiện tại: <span id="txt-rebirth-bonus">+0%</span></div>
+                <button class="btn-action" style="background: var(--accent-purple);" id="btn-rebirth" onclick="doRebirth()">CHUYỂN SINH</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>LỊCH SỬ CHUYỂN SINH</span></div>
+                <div id="rebirth-history-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span>THÀNH TỰU</span>
+                    <span id="txt-completion-pct" style="color: var(--accent-yellow, #fbbf24);">0%</span>
+                </div>
+                <div id="achievement-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span>QUÂN SỐ BẦY ĐÀN</span>
+                    <span id="txt-swarm-count" style="color: var(--accent-green);">0 / 10</span>
+                </div>
+                <button class="btn-action" onclick="upgradeZombieLevel()">NÂNG CẤP ZOMBIE (Chi phí: <span id="txt-zombie-cost">10</span> Gỗ)</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>CHIẾN TRƯỜNG BOSS</span></div>
+                <button class="btn-action" style="background: var(--accent-red);" onclick="triggerBossBattle()">KHIÊU CHIẾN BOSS CHAPTER</button>
+                <label style="display:flex; align-items:center; gap:6px; font-size:9px; color: var(--text-muted); margin-top:2px;">
+                    <input type="checkbox" id="chk-auto-battle" onchange="toggleAutoBattle(this.checked)">
+                    Tự động chiến đấu (Auto-battle) — tự khiêu chiến Boss kế tiếp khi hạ gục
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:9px; color: var(--text-muted); margin-top:6px;">
+                    <input type="checkbox" id="chk-auto-claim" onchange="toggleAutoClaim(this.checked)">
+                    Tự động nhận thưởng (Auto-claim) — tự nhận Nhiệm Vụ + Thành Tựu đã đủ điều kiện
+                </label>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>HỆ THỐNG PWA</span></div>
+                <button class="btn-action" style="background: var(--accent-purple);" id="btn-notify" onclick="notifyManager.requestPermission()">🔔 BẬT THÔNG BÁO TREO MÁY</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>CÀI ĐẶT & LƯU TRỮ</span></div>
+                <div style="font-size: 8px; color: var(--text-muted); margin-bottom:4px;">Game chạy hoàn toàn local trên máy bạn — xuất file Save để backup, phòng khi xóa dữ liệu trình duyệt hoặc đổi thiết bị.</div>
+                <div style="display:flex; gap:6px;">
+                    <button class="btn-action" style="background:#0284c7;" onclick="SaveManager.exportSave()">⬇ XUẤT SAVE</button>
+                    <button class="btn-action" style="background:#0284c7;" onclick="document.getElementById('file-import-save').click()">⬆ NHẬP SAVE</button>
+                </div>
+                <input type="file" id="file-import-save" accept="application/json" style="display:none;" onchange="if(this.files[0]) SaveManager.importSave(this.files[0]); this.value='';">
+            </div>
+        </div>
+
+        <!-- TAB WORLD MAP (mục 4 - Hệ thống Thế giới & Bản đồ) -->
+        <div id="tab-world" class="tab-content">
+            <div class="card-box">
+                <div class="card-title"><span>CẤU TRÚC THẾ GIỚI NHIỀU LỚP</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);">Chọn khu vực để thay đổi bối cảnh viewport. Mở khóa theo Chapter cốt truyện.</div>
+            </div>
+            <div id="world-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+
+        <!-- TAB BASE / BÁN GIỚI (mục 4.2 - Base Building) -->
+        <div id="tab-base" class="tab-content">
+            <div class="card-box">
+                <div class="card-title"><span>BÁN GIỚI (SUB-WORLD CÁ NHÂN)</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);">Nâng cấp công trình để tăng sản lượng và sức chiến đấu của Bán Giới.</div>
+            </div>
+            <div id="building-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+
+        <!-- TAB POWER SYSTEMS & FACTIONS (mục 5 - Hệ Sức Mạnh & Phe Phái) -->
+        <div id="tab-power" class="tab-content">
+            <div class="card-box">
+                <div class="card-title"><span>7 HỆ SỨC MẠNH</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);">Mở khóa bằng Mẫu Gen, chỉ 1 hệ được kích hoạt cùng lúc làm build chính.</div>
+            </div>
+            <div id="power-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+
+            <div class="card-box" id="active-skill-box" style="display:none;">
+                <div class="card-title"><span>KỸ NĂNG CHỦ ĐỘNG</span></div>
+                <div id="txt-skill-name" style="font-size: 10px; font-weight:bold; color: var(--accent-blue);"></div>
+                <div id="txt-skill-desc" style="font-size: 8px; color: var(--text-muted); margin-bottom:4px;"></div>
+                <button class="btn-action" id="btn-use-skill" onclick="useActiveSkill()">SỬ DỤNG</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>PHE PHÁI (DANH HIỆU CỐT TRUYỆN)</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);">Chọn phe — miễn phí, đổi bất cứ lúc nào. Ảnh hưởng danh hiệu &amp; lời thoại cốt truyện, cộng thêm CP nhỏ.</div>
+            </div>
+            <div id="faction-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+
+        <!-- TAB EQUIPMENT & CRAFTING (mục 6 - Hệ Thống Trang Bị & Chế Tạo) -->
+        <div id="tab-gear" class="tab-content">
+            <div class="card-box">
+                <div class="card-title"><span>CHẾ TẠO TRANG BỊ THEO HỆ</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);">Mỗi lần chế tạo roll ngẫu nhiên độ hiếm (Thường→Thần Thoại). Kết quả cao hơn sẽ tự động thay thế trang bị cũ.</div>
+            </div>
+            <div id="gear-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+
+        <!-- TAB BATTLEFIELD (mục 7 - PvE Dungeon, PvP Arena, World Boss, Farming Ticket) -->
+        <div id="tab-battle" class="tab-content">
+            <div class="card-box">
+                <div class="card-title">
+                    <span>VÉ CÀY (FARMING TICKET)</span>
+                    <span id="txt-ticket-count" style="color: var(--accent-blue);">0 / 10</span>
+                </div>
+                <div style="font-size: 8px; color: var(--text-muted);">Hồi 1 Vé mỗi 5 phút. Dùng Vé để vào Phó Bản.</div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>PHÓ BẢN CÀY TÀI NGUYÊN</span></div>
+                <div style="font-size: 8px; color: var(--text-muted); margin-bottom: 4px;">Hầm ngục Tử Linh, Tế Đàn Huyết Tộc — tốn 1 Vé mỗi lượt.</div>
+            </div>
+            <div id="dungeon-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span>ĐẤU TRƯỜNG MA (BẢN SAO QUÁ KHỨ)</span>
+                    <span id="txt-pvp-rank" style="color: var(--accent-purple);">Đồng</span>
+                </div>
+                <div style="font-size: 8px; color: var(--text-muted);">Đối đầu bóng ma của chính bạn ở các vòng Chuyển Sinh trước, hoặc kình địch trong cốt truyện — không cần người chơi khác.</div>
+                <div style="font-size: 8px; color: var(--text-muted);" id="txt-pvp-stats">0 Điểm — 0T/0B</div>
+                <button class="btn-action" style="background: var(--accent-purple);" id="btn-pvp-fight" onclick="runPvpBattle()">KHIÊU CHIẾN ĐỐI THỦ</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>BOSS CỐT TRUYỆN — TÀ THẦN CỔ ĐẠI</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);">Lượt tấn công còn lại hôm nay: <span id="txt-wb-attempts">5</span> / 5</div>
+                <div style="font-size: 8px; margin: 3px 0;" id="txt-wb-weakness"></div>
+                <div class="hp-container" style="margin: 4px 0;">
+                    <div id="wb-hp-inner" class="hp-inner" style="width: 100%; background: var(--accent-red);"></div>
+                </div>
+                <div style="font-size: 8px; color: var(--text-muted);" id="txt-wb-hp">0 / 0 HP</div>
+                <button class="btn-action" style="background: var(--accent-red);" id="btn-wb-attack" onclick="attackWorldBoss()">TẤN CÔNG TÀ THẦN</button>
+            </div>
+        </div>
+
+        <!-- TAB SHOP / MONETIZATION (mục 10 - demo/mock, không xử lý thanh toán thật) -->
+        <div id="tab-shop" class="tab-content">
+            <div class="card-box">
+                <div class="card-title">
+                    <span>THƯƠNG HỘI</span>
+                    <span id="txt-gems" style="color: var(--accent-purple);">💎 0</span>
+                </div>
+                <div style="font-size: 8px; color: var(--text-muted);">Demo mock-up hệ thống doanh thu — không có thanh toán thật, chỉ mô phỏng luồng chơi.</div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>GACHA TRANG BỊ / SKIN</span></div>
+                <div style="font-size: 8px; color: var(--text-muted); margin-bottom:4px;">Roll ngẫu nhiên 1 trang bị hệ bất kỳ, không ảnh hưởng tiến trình PvE cày chay.</div>
+                <button class="btn-action" style="background: var(--accent-purple);" onclick="gachaRoll()">QUAY GACHA (30 💎)</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>BATTLE PASS THEO CHAPTER</span></div>
+                <div style="font-size: 8px; color: var(--text-muted); margin-bottom:4px;">Nhận thưởng miễn phí mỗi khi hoàn thành 1 Chapter cốt truyện.</div>
+                <div id="battlepass-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>TĂNG TỐC TREO MÁY</span></div>
+                <div style="font-size: 8px; color: var(--text-muted); margin-bottom:4px;">x2 tốc độ thu tài nguyên trong 30 phút. Chỉ tiện lợi, không bắt buộc.</div>
+                <button class="btn-action" style="background: #0284c7;" id="btn-speedboost" onclick="buySpeedBoost()">KÍCH HOẠT (20 💎)</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>SKIN THỜI TRANG</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);">Đổi màu hào quang nhân vật A Tun (cosmetic, không đổi chỉ số).</div>
+                <div id="skin-list" style="display:flex; gap:6px; margin-top:4px;"></div>
+            </div>
+        </div>
+
+        <!-- TAB EVOLUTION -->
+        <div id="tab-evo" class="tab-content">
+            <div id="skill-tree-wrapper">
+                <canvas id="skill-tree-canvas" style="position: absolute; inset: 0; pointer-events: none; z-index: 1;"></canvas>
+                <div id="skill-tree-nodes" style="position: absolute; inset: 0; z-index: 2;"></div>
+            </div>
+            <div class="card-box" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <div>
+                    <div id="skill-title" style="font-size: 10px; font-weight: bold; color: var(--accent-blue);">Chọn Node Kỹ Năng</div>
+                    <div id="skill-desc" style="font-size: 8px; color: var(--text-muted);">Mở khóa để tăng chỉ số quân đoàn.</div>
+                </div>
+                <button id="btn-upgrade-node" class="btn-action" style="width: auto; padding: 6px 12px;" disabled>NÂNG CẤP</button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span>HỢP NHẤT VỚI HỆ SỨC MẠNH</span></div>
+                <div style="font-size: 8px; color: var(--text-muted);" id="txt-skilltree-synergy">Kích hoạt 1 Hệ Sức Mạnh và Tinh Luyện nó — mỗi cấp Tinh Luyện cộng +5% hiệu lực cho mọi Node Skill Tree đã mở khóa.</div>
+            </div>
+        </div>
+
+        <!-- TAB MECH -->
+        <div id="tab-mech" class="tab-content">
+            <div class="card-box">
+                <div class="card-title"><span>ĐIỂM NĂNG LƯỢNG CƠ KHÍ</span></div>
+                <div style="font-size: 10px; color: var(--accent-blue);">PHẦN CỨNG (HW): <span id="txt-hw">0</span></div>
+                <div style="font-size: 10px; color: var(--accent-purple);">PHẦN MỀM (SW): <span id="txt-sw">0</span></div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span>DÂY CHUYỀN CHẾ TẠO CƠ KHÍ (3 GIAI ĐOẠN)</span></div>
+                <div style="font-size:8px; color:var(--text-muted); margin-bottom:6px;">Mỗi Bot Tự Động phải đi qua đủ 3 bước: Khung Kim Loại → Mạch Điều Khiển → Lắp Ráp Bot.</div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:9px; color:var(--accent-blue); margin-bottom:2px;">
+                    <span>Bước 1 — Khung Kim Loại</span>
+                    <span>Đang có: <span id="txt-mech-frames">0</span></span>
+                </div>
+                <button class="btn-action" style="background: #0284c7;" onclick="craftMechFrame()">CHẾ TẠO KHUNG (5 Phế Liệu + 3 Quặng)</button>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:9px; color:var(--accent-blue); margin-top:8px; margin-bottom:2px;">
+                    <span>Bước 2 — Mạch Điều Khiển</span>
+                    <span>Đang có: <span id="txt-mech-circuits">0</span></span>
+                </div>
+                <button class="btn-action" style="background: #0369a1;" onclick="craftMechCircuit()">CHẾ TẠO MẠCH (1 Khung + 5 Linh Kiện)</button>
+
+                <div style="font-size:9px; color:var(--accent-purple); margin-top:8px; margin-bottom:2px;">Bước 3 — Lắp Ráp Bot Tự Động</div>
+                <button class="btn-action" style="background: #075985;" onclick="craftSwarmBot()">LẮP RÁP BOT (1 Mạch + 5 Dữ Liệu) → +5 HW / +5 SW</button>
+            </div>
+        </div>
+
+        <!-- TAB NPC -->
+        <div id="tab-npc" class="tab-content">
+            <div id="npc-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+        </div>
+
+        <div id="combat-log"></div>
+    </div>
+</div>
+
+<!-- MODAL CÀI ĐẶT: Export/Import Save -->
+<div id="settings-modal" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.9); z-index:200; align-items:center; justify-content:center; padding:16px;">
+    <div style="background: var(--bg-panel, #0f172a); border:1px solid var(--accent-blue,#38bdf8); border-radius:8px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto; padding:14px; font-size:9px; color:#e2e8f0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:12px; font-weight:bold; color: var(--accent-blue,#38bdf8);">⚙ CÀI ĐẶT</span>
+            <button onclick="closeSettings()" style="background:none; border:none; color:#e2e8f0; font-size:16px; cursor:pointer;">✕</button>
+        </div>
+
+        <div class="card-box" style="margin-bottom:10px;">
+            <div class="card-title"><span>XUẤT SAVE (EXPORT)</span></div>
+            <div style="color:var(--text-muted,#94a3b8); margin-bottom:6px;">Sao chép đoạn mã bên dưới hoặc tải file để sao lưu tiến trình.</div>
+            <textarea id="export-code-area" readonly style="width:100%; height:70px; background:#020617; color:#4ade80; border:1px solid #334155; border-radius:4px; font-size:8px; padding:6px; resize:vertical; box-sizing:border-box;"></textarea>
+            <div style="display:flex; gap:6px; margin-top:6px;">
+                <button class="btn-action" style="flex:1;" onclick="doExportSave()">TẠO MÃ SAVE</button>
+                <button class="btn-action" style="flex:1; background:var(--accent-blue,#38bdf8);" onclick="copyExportCode()">SAO CHÉP</button>
+                <button class="btn-action" style="flex:1; background:var(--accent-purple,#a78bfa);" onclick="downloadSaveFile()">TẢI FILE</button>
+            </div>
+        </div>
+
+        <div class="card-box" style="margin-bottom:10px;">
+            <div class="card-title"><span>NHẬP SAVE (IMPORT)</span></div>
+            <div style="color:var(--text-muted,#94a3b8); margin-bottom:6px;">Dán mã save vào ô bên dưới hoặc chọn file đã tải, sau đó bấm Nạp Save. Thao tác này sẽ GHI ĐÈ tiến trình hiện tại.</div>
+            <textarea id="import-code-area" placeholder="Dán mã save vào đây..." style="width:100%; height:70px; background:#020617; color:#e2e8f0; border:1px solid #334155; border-radius:4px; font-size:8px; padding:6px; resize:vertical; box-sizing:border-box;"></textarea>
+            <input type="file" id="import-file-input" accept=".json,.txt" style="display:none;" onchange="handleImportFile(event)">
+            <div style="display:flex; gap:6px; margin-top:6px;">
+                <button class="btn-action" style="flex:1;" onclick="document.getElementById('import-file-input').click()">CHỌN FILE</button>
+                <button class="btn-action" style="flex:1; background:var(--accent-red,#ef4444);" onclick="doImportSave()">NẠP SAVE</button>
+            </div>
+        </div>
+
+        <div class="card-box">
+            <div class="card-title"><span>KHÁC</span></div>
+            <button class="btn-action" style="width:100%; background:var(--accent-red,#ef4444);" onclick="doResetSave()">XÓA TOÀN BỘ TIẾN TRÌNH</button>
+        </div>
+
+        <div id="settings-msg" style="margin-top:8px; text-align:center; color:var(--accent-amber,#f59e0b); min-height:12px;"></div>
+    </div>
+</div>
+
+<script>
+// ==========================================
+// 1. CONFIG, GAME STATE & LOCALSTORAGE
+// ==========================================
+const CONFIG = {
+    SAVE_KEY: "ZOMBIE_COMMANDER_EXTENDED_SAVE",
+    RESOURCE_TICK: 1000,
+    FPS_TARGET: 60
+};
+
+const NPC_DEFINITIONS = [
+    { id: 0, name: "Mạc Gia Vỹ", buff: "+15% Tốc độ khai thác Gỗ", cost: 20 },
+    { id: 1, name: "Trần Khoa", buff: "+20% Sức chống chịu cho Zombie", cost: 35 },
+    { id: 2, name: "Lô Vũ", buff: "+10% Sát thương Boss", cost: 50 },
+    { id: 3, name: "Sơn Đế", buff: "+25% Sản lượng Đá & Quặng", cost: 75 },
+    { id: 4, name: "Vi Đặc", buff: "+15% Điểm HW/SW Cơ khí", cost: 100 },
+    { id: 5, name: "Bối La Mễ", buff: "+30% Mẫu Gen rớt ra từ Boss", cost: 150 },
+    { id: 6, name: "GS Phú Lâm", buff: "Tự động nghiên cứu Lõi Data", cost: 200 },
+    { id: 7, name: "Địch Khắc", buff: "+50% Lực chiến Tổng (CP)", cost: 300 }
+];
+
+const OFFLINE_CAP_SECONDS = 8 * 3600; // idle earnings cap at 8 hours, per GDD mục 3
+
+// Mục 4.1 - Cấu trúc thế giới nhiều lớp: 5 khu vực mở khóa dần theo Chapter.
+// Mỗi zone đổi bối cảnh viewport (màu nền/sương mù/mặt đất) + 1 bonus sản lượng nhỏ,
+// phản ánh biome (rừng/lâu đài Gothic/học viện ma pháp/open-world/đô thị kinh dị).
+const WORLD_ZONES = [
+    { id: 0, name: "Server 8 (Tận Thế Zombie)", desc: "Rừng rậm, mỏ đá, Căn Cứ Nhà Tù", unlockChapter: 1, bg: 0x0b1220, ground: 0x0b1220, fog: 0x0b1220, bonusRes: "wood", bonusPct: 0.10 },
+    { id: 1, name: "Thế giới Huyết Tộc", desc: "Lâu đài Gothic, lãnh địa quý tộc", unlockChapter: 2, bg: 0x1a0a12, ground: 0x2a0f1c, fog: 0x1a0a12, bonusRes: "gene", bonusPct: 0.10 },
+    { id: 2, name: "Thế giới Tử Linh & Ma Pháp", desc: "Học viện phép thuật, hầm ngục undead", unlockChapter: 3, bg: 0x0a0f1a, ground: 0x121a2e, fog: 0x0a0f1a, bonusRes: "data", bonusPct: 0.15 },
+    { id: 3, name: "Đại Thế Giới Hợp Nhất", desc: "Open-world nối các Server qua Cổng Dịch Chuyển", unlockChapter: 5, bg: 0x0c1512, ground: 0x122018, fog: 0x0c1512, bonusRes: "stone", bonusPct: 0.15 },
+    { id: 4, name: "Sương Mù Đen (Hắc Vụ Khu)", desc: "Đô thị hiện đại bị xâm lấn, phong cách kinh dị", unlockChapter: 6, bg: 0x08080a, ground: 0x141416, fog: 0x08080a, bonusRes: "scrap", bonusPct: 0.20 }
+];
+
+// Mục 4.2 - Bán Giới (Base Building): công trình nâng cấp bằng tài nguyên cơ bản,
+// mỗi cấp tăng dần chi phí (x1.6/cấp) và cộng dồn hiệu ứng tương ứng.
+const BUILDING_DEFS = {
+    autoline: { name: "Dây Chuyền Tự Động", desc: "+8% tốc độ thu Gỗ & Đá mỗi cấp", baseCost: 30, costRes: "wood", effectPerLvl: 0.08 },
+    watchtower: { name: "Tháp Canh", desc: "+6% sát thương lên Boss mỗi cấp", baseCost: 25, costRes: "stone", effectPerLvl: 0.06 },
+    warehouse: { name: "Kho Chứa (Bán Giới)", desc: "+10% Mẫu Gen nhận từ mọi nguồn mỗi cấp", baseCost: 40, costRes: "ruins", effectPerLvl: 0.10 }
+};
+
+// Mục 5.1 - 7 Hệ Sức Mạnh: mỗi hệ là 1 class/nhánh kỹ năng riêng, mở khóa bằng
+// Mẫu Gen rồi có thể kích hoạt làm build chính (chỉ 1 hệ active cùng lúc).
+// cpMult/dmgMult/resMult/hpMult/swarmBonus áp trực tiếp vào các công thức tương ứng.
+const POWER_SYSTEMS = [
+    { id: 0, name: "Huyết Tộc", role: "DPS / Sustain", desc: "Hút máu, hồi phục nhanh, biến hình", cost: 40, cpMult: 0.10, dmgMult: 0.15, resMult: 0, hpMult: 0.05, swarmBonus: 0 },
+    { id: 1, name: "Tử Linh", role: "Summoner", desc: "Triệu hồi undead, thao túng linh hồn", cost: 50, cpMult: 0.05, dmgMult: 0, resMult: 0, hpMult: 0, swarmBonus: 0.15 },
+    { id: 2, name: "Thánh Điện", role: "Support / Tank", desc: "Thanh tẩy trạng thái xấu, khiên phép", cost: 45, cpMult: 0, dmgMult: 0, resMult: 0, hpMult: 0.25, swarmBonus: 0 },
+    { id: 3, name: "Thâm Uyên", role: "Debuff / DoT", desc: "Ô nhiễm diện rộng, cướp đoạt quy tắc", cost: 55, cpMult: 0, dmgMult: 0.20, resMult: 0, hpMult: 0, swarmBonus: 0 },
+    { id: 4, name: "Thần Thụ / Tự Nhiên", role: "Support / World Buff", desc: "Hồi sinh đồng đội, sức mạnh cột trụ", cost: 35, cpMult: 0, dmgMult: 0, resMult: 0.12, hpMult: 0.10, swarmBonus: 0 },
+    { id: 5, name: "Phượng Hoàng", role: "Burst DPS", desc: "Tái sinh từ tro tàn, sát thương lửa thiêu đốt", cost: 60, cpMult: 0.15, dmgMult: 0.25, resMult: 0, hpMult: 0, swarmBonus: 0 },
+    { id: 6, name: "Cơ Giới / Tinh Không", role: "Ranged / Tech DPS", desc: "Tự động hóa công sự, phân rã quy tắc", cost: 50, cpMult: 0.20, dmgMult: 0.10, resMult: 0, hpMult: 0, swarmBonus: 0 }
+];
+
+// Mục 5.1 mở rộng - CHIỀU SÂU HỆ SỨC MẠNH: mỗi hệ (đã mở khóa) có thể tiếp tục
+// "Tinh Luyện" tối đa 5 cấp bằng Mẫu Gen. Mỗi cấp cộng thêm +15% vào TẤT CẢ hệ số
+// gốc của hệ đó (cpMult/dmgMult/resMult/hpMult/swarmBonus), nhân dồn tuyến tính
+// (không compound) để tránh bùng nổ số liệu ở cấp cao. Ở Lv.5 (tối đa) mở thêm
+// 1 "Đột Phá" — hiệu ứng đặc biệt riêng theo từng hệ, cộng thêm ngoài scale trên.
+const POWER_MAX_LEVEL = 5;
+const POWER_LEVEL_STEP = 0.15;
+const POWER_BREAKTHROUGHS = {
+    0: "Hút máu vượt ngưỡng 100% HP tối đa (overheal 20% thành khiên tạm thời).",
+    1: "Giới hạn Swarm +1 zombie mỗi 2 cấp Zombie Lvl (cộng dồn thêm ngoài % gốc).",
+    2: "Khiên Thanh Tẩy miễn nhiễm mọi hiệu ứng xấu trong 10s sau khi dùng.",
+    3: "Ô Nhiễm Diện Rộng để lại DoT 5%/giây trong 6s sau đòn chính.",
+    4: "Tài nguyên hồi offline tính thêm 2 giờ (10h thay vì 8h giới hạn).",
+    5: "Áp Chế Nguyên Tố có 25% cơ hội gây Chí Mạng x2.",
+    6: "Phân Rã Quy Tắc luôn rớt thêm Lõi Data (100%, thay vì 20%)."
+};
+
+function getPowerSystemLevel(id) {
+    return (gameState.powerSystemLevels && gameState.powerSystemLevels[id]) || 0;
+}
+
+// Hệ số nhân áp lên từng stat gốc của 1 Hệ Sức Mạnh, dựa trên cấp Tinh Luyện hiện tại.
+function getPowerLevelScale(id) {
+    return 1 + getPowerSystemLevel(id) * POWER_LEVEL_STEP;
+}
+
+function isPowerSystemMaxed(id) {
+    return getPowerSystemLevel(id) >= POWER_MAX_LEVEL;
+}
+
+function getPowerSystemUpgradeCost(id) {
+    const ps = POWER_SYSTEMS.find(p => p.id === id);
+    const lvl = getPowerSystemLevel(id);
+    return Math.floor(ps.cost * 0.6 * Math.pow(1.6, lvl));
+}
+
+function upgradePowerSystem(id) {
+    if (!gameState.powerSystemsUnlocked[id]) return;
+    if (isPowerSystemMaxed(id)) return;
+    const cost = getPowerSystemUpgradeCost(id);
+    if (gameState.resources.gene < cost) return;
+
+    if (!gameState.powerSystemLevels) gameState.powerSystemLevels = [0, 0, 0, 0, 0, 0, 0];
+    gameState.resources.gene -= cost;
+    gameState.powerSystemLevels[id]++;
+    const ps = POWER_SYSTEMS.find(p => p.id === id);
+    const newLvl = gameState.powerSystemLevels[id];
+    soundEngine.playUpgrade();
+    if (newLvl >= POWER_MAX_LEVEL) {
+        addCombatLog(`[${ps.name}] ĐỘT PHÁ Lv.${newLvl}/5 tối đa! ${POWER_BREAKTHROUGHS[id]}`);
+    } else {
+        addCombatLog(`[${ps.name}] Tinh Luyện lên Lv.${newLvl}/5! Toàn bộ hệ số +${Math.round(POWER_LEVEL_STEP * 100)}%.`);
+    }
+    if (renderEngine) renderEngine.updatePlayerAppearance();
+    renderPowerList();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Mục 5 - Màu hào quang viewport riêng cho từng Hệ Sức Mạnh (áp lên nhân vật).
+const POWER_COLORS = {
+    0: 0xdc2626, 1: 0x7c3aed, 2: 0xfbbf24, 3: 0x166534,
+    4: 0x22c55e, 5: 0xf97316, 6: 0x38bdf8
+};
+
+// Mục 5 - Kỹ Năng Chủ Động riêng cho từng Hệ Sức Mạnh (trước đây chỉ có buff
+// passive qua chỉ số). Mỗi hệ có 1 kỹ năng, dùng khi hệ đó đang active, có hồi chiêu riêng.
+const POWER_ACTIVE_SKILLS = [
+    { id: 0, name: "Hút Máu Cuồng Bạo", desc: "Hồi 40% HP tối đa. Nếu đang giao chiến Boss, gây thêm 150% CP sát thương.", cooldown: 30, kind: 'heal_bossburst', healPct: 0.4, dmgMult: 1.5 },
+    { id: 1, name: "Triệu Hồi Quân Đoàn Undead", desc: "Nhận ngay lượng tài nguyên tương đương 45 giây thu hoạch.", cooldown: 45, kind: 'resourceburst', seconds: 45 },
+    { id: 2, name: "Khiên Thanh Tẩy", desc: "Hồi đầy 100% HP tối đa, thanh tẩy trạng thái xấu.", cooldown: 40, kind: 'heal', healPct: 1.0 },
+    { id: 3, name: "Ô Nhiễm Diện Rộng", desc: "Gây sát thương bằng 200% CP lên Boss đang giao chiến.", cooldown: 35, kind: 'bossburst', dmgMult: 2.0 },
+    { id: 4, name: "Sức Mạnh Cột Trụ", desc: "Nhận ngay lượng tài nguyên tương đương 60 giây thu hoạch.", cooldown: 50, kind: 'resourceburst', seconds: 60 },
+    { id: 5, name: "Áp Chế Nguyên Tố", desc: "Gây sát thương bằng 250% CP lên Boss đang giao chiến.", cooldown: 35, kind: 'bossburst', dmgMult: 2.5 },
+    { id: 6, name: "Phân Rã Quy Tắc", desc: "Gây sát thương bằng 180% CP lên Boss, 20% cơ hội rớt thêm Lõi Data.", cooldown: 35, kind: 'bossburst_bonus', dmgMult: 1.8 }
+];
+
+function getHighestEquippedRarity() {
+    let best = -1;
+    for (const type of EQUIPMENT_TYPES) {
+        const rid = gameState.equipment[type.id];
+        if (rid !== undefined && rid !== null && rid > best) best = rid;
+    }
+    return best;
+}
+
+// Mục 5.2 - Phe phái dùng cho PvP/Guild War (chưa có PvP thật, chỉ flavor + bonus CP nhỏ).
+const FACTIONS = [
+    { id: 0, name: "Liên Bang Đông Khu", desc: "Xung đột chính trị/tài nguyên với Tây Khu", cpMult: 0.05 },
+    { id: 1, name: "Liên Bang Tây Khu", desc: "Đối trọng chính trị với Đông Khu", cpMult: 0.05 },
+    { id: 2, name: "Ma Phổ", desc: "Tập đoàn đối đầu giai đoạn đầu", cpMult: 0.03 },
+    { id: 3, name: "Giáo Hội Thánh Điện", desc: "Lực lượng cuồng tín mang sức mạnh thanh tẩy", cpMult: 0.04 },
+    { id: 4, name: "Dị Tộc Tinh Không", desc: "Thực thể ngoài hành tinh, quy tắc sức mạnh cao cấp", cpMult: 0.06 }
+];
+
+let gameState = {
+    resources: { wood: 100, stone: 50, ore: 10, ruins: 0, scrap: 20, comp: 5, data: 10, gene: 15 },
+    zombieLvl: 1,
+    chapter: 1,
+    playerHp: 100,
+    maxPlayerHp: 100,
+    hwPoints: 0,
+    swPoints: 0,
+    npcsUnlocked: [false, false, false, false, false, false, false, false],
+    skillTreeLevels: { base: 1, licker: 0, tyrant: 0, fusion: 0, hybrid: 0 },
+    lastActiveTs: Date.now(),
+    currentWorld: 0,
+    autoBattle: false,
+    buildings: { autoline: 0, watchtower: 0, warehouse: 0 },
+    powerSystemsUnlocked: [false, false, false, false, false, false, false],
+    // Mục 5.1 mở rộng (Chiều sâu) - cấp Tinh Luyện của từng Hệ, 0 = vừa mở khóa, tối đa 5.
+    powerSystemLevels: [0, 0, 0, 0, 0, 0, 0],
+    activePowerSystem: null,
+    faction: null,
+    equipment: {},
+    // Mục 7 - PvE Dungeon / PvP / World Boss / Farming Ticket
+    tickets: 10,
+    ticketLastTs: Date.now(),
+    pvpPoints: 0,
+    pvpWins: 0,
+    pvpLosses: 0,
+    pvpLastTs: 0,
+    worldBoss: { hp: 0, maxHp: 0, attemptsLeft: 5, lastResetDate: null },
+    lastStoryChapterShown: 1,
+    // Mục 5 - Kỹ Năng Chủ Động: mốc thời gian dùng gần nhất theo từng Hệ Sức Mạnh
+    skillLastUsedTs: {},
+    // Mục 10 - Monetization (mock/demo, không xử lý thanh toán thật)
+    gems: 100,
+    battlePassClaimed: [],
+    speedBoostUntil: 0,
+    ownedSkins: [0],
+    skinId: 0,
+    // Mục 8 mở rộng - Nhiệm Vụ theo Chapter: counter dùng để chấm tiến độ nhiệm vụ
+    stats: { gearCrafted: 0, dungeonRuns: 0, worldBossKills: 0 },
+    questsClaimed: [],
+    // Mục 11 - Nội dung Endgame: Chuyển Sinh (Rebirth/Prestige) + Thành Tựu
+    rebirthCount: 0,
+    rebirthMult: 0,
+    achievementsClaimed: [],
+    // Lịch sử Chuyển Sinh: mỗi vòng lưu {round, durationSec, cp, ts} để tự theo dõi
+    // tiến bộ qua nhiều vòng (thay thế "động lực so sánh" của bảng xếp hạng PvP thật).
+    rebirthHistory: [],
+    rebirthStartTs: Date.now(),
+    // Bật để tự động nhận Nhiệm Vụ Chapter + Thành Tựu đã đủ điều kiện mỗi giây,
+    // hợp với lối chơi AFK/treo máy thay vì phải vào từng tab bấm tay.
+    autoClaim: false,
+    // Mục 6 - Dây chuyền chế tạo Cơ Khí 3 giai đoạn: Khung Kim Loại -> Mạch Điều Khiển -> Bot Tự Động.
+    mechChain: { frames: 0, circuits: 0 }
+};
+
+// Mục 7.1 - Phó bản cày tài nguyên (Farming Dungeon): "xưởng sản xuất tự động"
+// theo đúng thiết kế (Hầm ngục Tử Linh, Tế Đàn Huyết Tộc...), tốn 1 Vé/lượt.
+// Chiều sâu: mỗi Phó Bản giờ có nhiều TẦNG (floors). Số tầng xuyên phá được phụ
+// thuộc vào CP hiện tại so với floorPower của tier (CP càng cao xuyên càng sâu,
+// không còn "vào là full-clear ngay" như bản cũ). floorPower ước theo mốc CP kỳ
+// vọng ở unlockChapter tương ứng. Xuyên hết toàn bộ tầng (full clear) mở khóa cơ
+// hội rớt Trang Bị, tỉ lệ tăng dần theo độ khó tier.
+const DUNGEON_TIERS = [
+    { id: 0, name: "Hầm Ngục Tử Linh (Dễ)", unlockChapter: 1, mult: 1.0, rewardRes: ["data", "comp"], floors: 3, floorPower: 50, gearDropChance: 0.20 },
+    { id: 1, name: "Tế Đàn Huyết Tộc (Vừa)", unlockChapter: 2, mult: 1.8, rewardRes: ["gene", "scrap"], floors: 3, floorPower: 110, gearDropChance: 0.30 },
+    { id: 2, name: "Học Viện Ma Pháp (Khó)", unlockChapter: 3, mult: 2.8, rewardRes: ["data", "gene"], floors: 4, floorPower: 200, gearDropChance: 0.40 },
+    { id: 3, name: "Vực Sâu Tinh Không (Ác Mộng)", unlockChapter: 5, mult: 4.2, rewardRes: ["comp", "gene", "data"], floors: 4, floorPower: 380, gearDropChance: 0.55 }
+];
+const TICKET_CAP = 10;
+const TICKET_REGEN_SEC = 300; // 1 vé / 5 phút
+
+// Mục 7.2 - PvP: đối thủ giả lập theo CP người chơi (không cần server thật).
+const PVP_RANKS = [
+    { min: 0, name: "Đồng" }, { min: 100, name: "Bạc" }, { min: 300, name: "Vàng" },
+    { min: 700, name: "Bạch Kim" }, { min: 1500, name: "Kim Cương" }
+];
+const PVP_COOLDOWN_SEC = 20;
+
+// Mục 7.3 - World Boss (Sự kiện Đại chiến Linh Tộc / Tà Thần Cổ Đại): boss chung
+// quy mô lớn, giới hạn lượt tấn công mỗi ngày, hồi sinh mạnh hơn sau khi hạ gục.
+const WORLDBOSS_DAILY_ATTEMPTS = 5;
+const WORLDBOSS_BASE_HP = 4000;
+// BUGFIX (kiểm tra sâu 08/2026, cùng lỗi gốc với HP Boss Chapter): HP World Boss
+// trước đây nhân dồn ×1.35 SAU MỖI LẦN HẠ (cấp số nhân theo số lần hạ), trong khi
+// sát thương/ngày của người chơi chỉ tăng gần tuyến tính theo CP -> mô phỏng 365
+// ngày cho thấy HP tăng x54 lần trong khi dmg/ngày chỉ tăng x7.7 lần => càng chơi
+// lâu khoảng cách giữa 2 lần hạ càng giãn ra, cuối cùng bí tắc hoàn toàn.
+// Sửa: HP tăng CỘNG DỒN TUYẾN TÍNH theo tổng số lần đã hạ (gameState.stats.worldBossKills,
+// vốn không reset khi Chuyển Sinh) thay vì nhân dồn vào chính wb.maxHp của lần trước.
+const WORLDBOSS_HP_LINEAR_STEP = 8000;
+const WORLDBOSS_WEAKNESS_BONUS = 0.3;
+// Chiều sâu: Tà Thần Cổ Đại luân phiên "khắc chế" 1 trong 7 Hệ Sức Mạnh mỗi vòng
+// hồi sinh (dựa theo tổng số lần đã hạ, không random để người chơi dự đoán và
+// đổi hệ chính trước khi đánh). Kích hoạt đúng hệ khắc chế -> +30% sát thương.
+function getWorldBossWeakness() {
+    const idx = gameState.stats.worldBossKills % POWER_SYSTEMS.length;
+    return POWER_SYSTEMS[idx];
+}
+
+// Mục 8 - Cốt truyện theo Chapter/Season, đúng lộ trình GDD mục 8.1
+const CHAPTER_STORY = [
+    null,
+    { title: "Chapter 1 — Khởi Đầu", text: "A Tun xuyên không, thức tỉnh thiên phú Zombie Phân Thân + Treo Máy, bắt đầu cải tạo căn cứ ban đầu giữa vùng đất tận thế." },
+    { title: "Chapter 2 — Server 8", text: "Tham gia các giải thi đấu, tiêu diệt Tập đoàn Ma Phổ, chính thức thăng cấp thành Giới Chủ Server 8." },
+    { title: "Chapter 3 — Liên Khu Vực", text: "Quy mô xung đột mở rộng, đối đầu trực tiếp với Liên Bang Tây Khu để bảo vệ Liên Bang Đông Khu." },
+    { title: "Chapter 4 — Huyết Tộc & Tử Linh", text: "Chinh phục hai thế giới mới, đăng quang Quân Vương Huyết Tộc và thăng cấp Đại Đạo Sư Tử Linh." },
+    { title: "Chapter 5 — Linh Tộc", text: "Đại chiến quy mô lớn bùng nổ, quân đoàn triển khai để giải cứu Thần Thụ An Tề Sa." },
+    { title: "Chapter 6 — Đại Thế Giới", text: "Chinh phạt không gian Tinh Không, đối đầu Tà Thần Cổ Đại, từng bước làm chủ Quy Tắc thế giới." },
+    { title: "Chapter 7 — Tàn Cuộc", text: "Tà Thần Cổ Đại gục ngã dưới tay A Tun. Vùng đất tận thế dần hồi sinh — nhưng những Vòng Lặp Thời Gian mới đã hé mở nơi chân trời, báo hiệu một hành trình không hồi kết." }
+];
+function getChapterStory(ch) {
+    if (ch >= 1 && ch < CHAPTER_STORY.length) return CHAPTER_STORY[ch];
+    return { title: `Chapter ${ch} — Vòng Lặp Vô Tận`, text: `Câu chuyện chính đã khép lại, nhưng A Tun chọn bước tiếp vào những Vòng Lặp Thời Gian mới, một mình đối mặt với vô số biến thể của vùng đất tận thế. Sức mạnh Zombie Phân Thân ngày càng vượt xa giới hạn ban đầu. Đã dọn sạch ${ch - 1} Chapter.` };
+}
+
+// Mục 8 mở rộng - Nhiệm Vụ cụ thể theo Chapter (trước đây cốt truyện chỉ có text/toast,
+// giờ có mục tiêu đo lường được + phần thưởng), dẫn dắt gameplay như mục 8.2 mô tả.
+const QUESTS_BY_CHAPTER = {
+    1: [
+        { type: 'unlock_power', target: 1, label: "Mở khóa 1 Hệ Sức Mạnh bất kỳ", reward: { gene: 15 } },
+        { type: 'craft_gear', target: 1, label: "Chế tạo 1 trang bị bất kỳ", reward: { scrap: 20 } }
+    ],
+    2: [
+        { type: 'dungeon_run', target: 2, label: "Hoàn thành 2 lượt Phó Bản", reward: { data: 15 } },
+        { type: 'pvp_win', target: 1, label: "Thắng 1 trận PvP", reward: { gems: 10 } }
+    ],
+    3: [
+        { type: 'unlock_power', target: 2, label: "Mở khóa 2 Hệ Sức Mạnh", reward: { gene: 30 } },
+        { type: 'dungeon_run', target: 4, label: "Hoàn thành 4 lượt Phó Bản", reward: { comp: 15 } }
+    ],
+    4: [
+        { type: 'pvp_win', target: 3, label: "Thắng 3 trận PvP", reward: { gems: 20 } },
+        { type: 'craft_gear', target: 3, label: "Chế tạo 3 trang bị", reward: { gene: 40 } }
+    ],
+    5: [
+        { type: 'dungeon_run', target: 8, label: "Hoàn thành 8 lượt Phó Bản", reward: { data: 40 } },
+        { type: 'unlock_power', target: 4, label: "Mở khóa 4 Hệ Sức Mạnh", reward: { gems: 30 } }
+    ],
+    6: [
+        { type: 'pvp_win', target: 6, label: "Thắng 6 trận PvP", reward: { gems: 50 } },
+        { type: 'craft_gear', target: 6, label: "Chế tạo 6 trang bị", reward: { gene: 80 } }
+    ]
+};
+function getQuestsForChapter(ch) {
+    if (QUESTS_BY_CHAPTER[ch]) return QUESTS_BY_CHAPTER[ch];
+    // Mục 11 - Endgame: sau Chapter 6, sinh nhiệm vụ vô hạn tăng dần độ khó
+    // theo cùng 4 loại mục tiêu, để vòng lặp cày cuối game luôn có mốc mới.
+    const cycle = ch - 6;
+    return [
+        { type: 'dungeon_run', target: 8 + cycle * 4, label: `Hoàn thành ${8 + cycle * 4} lượt Phó Bản (lũy kế)`, reward: { data: 20 + cycle * 10 } },
+        { type: 'pvp_win', target: 6 + cycle * 3, label: `Thắng ${6 + cycle * 3} trận PvP (lũy kế)`, reward: { gems: 15 + cycle * 8 } }
+    ];
+}
+function getQuestProgress(type) {
+    switch (type) {
+        case 'unlock_power': return gameState.powerSystemsUnlocked.filter(Boolean).length;
+        case 'craft_gear': return gameState.stats.gearCrafted;
+        case 'dungeon_run': return gameState.stats.dungeonRuns;
+        case 'pvp_win': return gameState.pvpWins;
+        default: return 0;
+    }
+}
+function claimQuest(chapter, idx) {
+    const key = `${chapter}-${idx}`;
+    const list = getQuestsForChapter(chapter);
+    if (!list || !list[idx] || gameState.questsClaimed.includes(key)) return;
+    const quest = list[idx];
+    if (getQuestProgress(quest.type) < quest.target) return;
+
+    for (const k in quest.reward) {
+        if (k === 'gems') gameState.gems += quest.reward.gems;
+        else gameState.resources[k] += quest.reward[k];
+    }
+    gameState.questsClaimed.push(key);
+    soundEngine.playUpgrade();
+    addCombatLog(`[Nhiệm Vụ] Hoàn thành "${quest.label}"! Đã nhận thưởng.`);
+    renderQuestList();
+    updateAppUI();
+    SaveManager.save();
+}
+function renderQuestList() {
+    const container = document.getElementById('quest-list');
+    if (!container) return;
+    const list = getQuestsForChapter(gameState.chapter);
+    if (!list) { container.innerHTML = `<div style="font-size:8px; color:var(--text-muted);">Chưa có nhiệm vụ mới cho Chapter này.</div>`; return; }
+
+    container.innerHTML = list.map((q, idx) => {
+        const key = `${gameState.chapter}-${idx}`;
+        const claimed = gameState.questsClaimed.includes(key);
+        const progress = Math.min(q.target, getQuestProgress(q.type));
+        const ready = progress >= q.target && !claimed;
+        const rewardLabel = Object.entries(q.reward).map(([k, v]) => `+${v} ${k === 'gems' ? 'Tinh Thạch' : (RESOURCE_LABELS[k] || k)}`).join(', ');
+        let btnLabel = claimed ? 'ĐÃ NHẬN' : (ready ? 'NHẬN' : `${progress}/${q.target}`);
+        return `
+        <div class="zone-item">
+            <div>
+                <div class="zone-name">${q.label}</div>
+                <div class="zone-desc">Thưởng: ${rewardLabel}</div>
+            </div>
+            <button class="btn-action" style="width:auto; padding:4px 8px;" ${ready ? '' : 'disabled'} onclick="claimQuest(${gameState.chapter}, ${idx})">${btnLabel}</button>
+        </div>`;
+    }).join('');
+}
+
+// ==========================================
+// MỤC 11 - NỘI DUNG ENDGAME: CHUYỂN SINH (PRESTIGE) + THÀNH TỰU
+// ==========================================
+const REBIRTH_UNLOCK_CHAPTER = 8;
+const REBIRTH_MULT_GAIN = 0.15;
+// ĐỘ KHÓ BOSS THEO CHUYỂN SINH — lịch sử 2 lần sửa (xem mô phỏng 1000 vòng, 08/2026):
+//  1) Bản gốc: Math.pow(1.35, rebirthCount) nhân ngoài số mũ  -> cấp số NHÂN, r=10 đã x20.
+//  2) Bản sửa lần 1 (SAI, tưởng là cấp số cộng nhưng vẫn nổ số): đưa +step vào SỐ MŨ
+//     -> chapter^(1.7 + r*0.08) = chapter^1.7 * (chapter^0.08)^r. Vì (chapter^0.08) là
+//     1 hằng số > 1, công thức này vẫn là (hằng số)^r về bản chất -> VẪN cấp số nhân,
+//     chỉ khác hằng số (1.19 thay vì 1.35). Mô phỏng 1000 vòng cho thấy ở rebirth #124,
+//     HP Boss đã lên tới ~4.6 nghìn tỷ trong khi CP người chơi chỉ tăng gần tuyến tính
+//     -> thời gian hạ Boss vọt từ ~30s lên hàng trăm nghìn giờ (bí tắc hoàn toàn).
+//  3) Bản sửa đúng (hiện tại): hệ số nhân CỘNG DỒN TUYẾN TÍNH bên NGOÀI số mũ:
+//     HP = 150 * chapter^1.7 * (1 + rebirthCount * REBIRTH_HP_LINEAR_STEP).
+//     Đây mới thực sự là cấp số CỘNG theo rebirthCount (1, 1.15, 1.30, 1.45...),
+//     khớp tốc độ tăng gần tuyến tính của CP người chơi (rebirthMult +0.15/lần).
+//     Mô phỏng 1000 vòng / 124 lần Chuyển Sinh: t_kill Boss ổn định 13-30s suốt game,
+//     không còn vòng nào bí tắc (>10 phút) hay one-shot (<0.5s).
+const REBIRTH_BASE_HP_EXP = 1.7;
+const REBIRTH_HP_LINEAR_STEP = 0.15;
+
+function canRebirth() {
+    return gameState.chapter >= REBIRTH_UNLOCK_CHAPTER;
+}
+
+// Reset "tiến trình 1 vòng chơi" (Chapter/tài nguyên/công trình/NPC/nhiệm vụ) để đổi
+// lấy bonus CP + tốc độ tài nguyên vĩnh viễn. Giữ lại toàn bộ "tài sản mét"
+// (Trang bị, Hệ Sức Mạnh, PvP rank, Vé, Tinh Thạch, Skin, chỉ số Thành Tựu)
+// để không mất công sức đã đầu tư — phù hợp người chơi solo dài hạn.
+function doRebirth() {
+    if (!canRebirth()) return;
+
+    // Mục "Bảng thống kê lịch sử Chuyển Sinh": chốt số liệu vòng vừa hoàn thành
+    // (thời gian từ lần Chuyển Sinh trước tới giờ + CP đạt được) TRƯỚC khi reset.
+    const durationSec = Math.max(0, Math.round((Date.now() - gameState.rebirthStartTs) / 1000));
+    gameState.rebirthHistory.push({
+        round: gameState.rebirthCount + 1,
+        durationSec,
+        cp: calculateTotalCP(),
+        ts: Date.now()
+    });
+    if (gameState.rebirthHistory.length > 50) gameState.rebirthHistory.shift(); // giữ 50 vòng gần nhất, tránh save phình to
+    gameState.rebirthStartTs = Date.now();
+
+    gameState.rebirthCount++;
+    gameState.rebirthMult += REBIRTH_MULT_GAIN;
+
+    gameState.resources = { wood: 100, stone: 50, ore: 10, ruins: 0, scrap: 20, comp: 5, data: 10, gene: 15 };
+    gameState.zombieLvl = 1;
+    gameState.chapter = 1;
+    gameState.buildings = { autoline: 0, watchtower: 0, warehouse: 0 };
+    gameState.npcsUnlocked = gameState.npcsUnlocked.map(() => false);
+    gameState.currentWorld = 0;
+    gameState.hwPoints = 0;
+    gameState.swPoints = 0;
+    gameState.skillTreeLevels = { base: 1, licker: 0, tyrant: 0, fusion: 0, hybrid: 0 };
+    gameState.questsClaimed = []; // chu kỳ nhiệm vụ mới sau khi Chuyển Sinh
+    gameState.worldBoss = { hp: 0, maxHp: 0, attemptsLeft: gameState.worldBoss.attemptsLeft, lastResetDate: gameState.worldBoss.lastResetDate };
+    gameState.lastStoryChapterShown = 1;
+
+    if (renderEngine) {
+        renderEngine.removeBoss();
+        renderEngine.updatePlayerAppearance();
+    }
+    soundEngine.playUpgrade();
+    addCombatLog(`[Chuyển Sinh] Vòng lặp thứ ${gameState.rebirthCount} bắt đầu! Bonus vĩnh viễn: +${Math.floor(gameState.rebirthMult * 100)}%`);
+    renderWorldList();
+    updateAppUI();
+    renderRebirthHistory();
+    SaveManager.save();
+}
+
+// Bảng thống kê lịch sử Chuyển Sinh - danh sách vòng gần nhất trước, mỗi dòng
+// có thanh bar tỉ lệ theo thời gian vòng đó (dài hơn = chậm hơn) để so trực quan.
+function renderRebirthHistory() {
+    const container = document.getElementById('rebirth-history-list');
+    if (!container) return;
+    const hist = gameState.rebirthHistory;
+    if (!hist.length) {
+        container.innerHTML = `<div style="font-size:8px; color:var(--text-muted);">Chưa có vòng Chuyển Sinh nào. Lịch sử sẽ ghi lại sau vòng đầu tiên.</div>`;
+        return;
+    }
+    const maxDur = Math.max(...hist.map(h => h.durationSec), 1);
+    const recent = [...hist].reverse().slice(0, 12);
+    container.innerHTML = recent.map(h => {
+        const pct = Math.max(4, Math.round((h.durationSec / maxDur) * 100));
+        const mins = Math.floor(h.durationSec / 60);
+        const secs = h.durationSec % 60;
+        return `
+        <div style="font-size:8px;">
+            <div style="display:flex; justify-content:space-between; color:var(--text-muted); margin-bottom:2px;">
+                <span>Vòng #${h.round} — CP: ${h.cp}</span>
+                <span>${mins}p${secs}s</span>
+            </div>
+            <div style="background:#1e293b; border-radius:4px; height:5px; overflow:hidden;">
+                <div style="background:var(--accent-purple); height:100%; width:${pct}%;"></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderRebirthCard() {
+    const countEl = document.getElementById('txt-rebirth-count');
+    if (countEl) countEl.innerText = `${gameState.rebirthCount} lần`;
+    const bonusEl = document.getElementById('txt-rebirth-bonus');
+    if (bonusEl) bonusEl.innerText = `+${Math.floor(gameState.rebirthMult * 100)}%`;
+    const btn = document.getElementById('btn-rebirth');
+    if (btn) {
+        if (canRebirth()) {
+            btn.disabled = false;
+            btn.innerText = `CHUYỂN SINH (+${Math.floor(REBIRTH_MULT_GAIN * 100)}%)`;
+        } else {
+            btn.disabled = true;
+            btn.innerText = `MỞ KHÓA Ở CHAPTER ${REBIRTH_UNLOCK_CHAPTER}`;
+        }
+    }
+}
+
+// Thành Tựu (Achievement) - mốc dài hạn xuyên suốt nhiều vòng Chuyển Sinh,
+// dùng gameState.stats/pvpWins/rebirthCount... vốn KHÔNG bị reset khi Chuyển Sinh.
+const ACHIEVEMENTS = [
+    { id: 'ch3', label: "Vượt qua Chapter 3", cond: () => gameState.chapter >= 3 || gameState.rebirthCount > 0, reward: { gene: 20 } },
+    { id: 'ch6', label: "Vượt qua Chapter 6", cond: () => gameState.chapter >= 6 || gameState.rebirthCount > 0, reward: { gems: 30 } },
+    { id: 'ch10', label: "Vượt qua Chapter 10 (lũy kế, không cần cùng vòng)", cond: () => gameState.chapter >= 10 || gameState.rebirthCount >= 3, reward: { gems: 80 } },
+    { id: 'rebirth1', label: "Chuyển Sinh lần đầu", cond: () => gameState.rebirthCount >= 1, reward: { gems: 100 } },
+    { id: 'rebirth5', label: "Chuyển Sinh 5 lần", cond: () => gameState.rebirthCount >= 5, reward: { gems: 300 } },
+    { id: 'rebirth10', label: "Chuyển Sinh 10 lần", cond: () => gameState.rebirthCount >= 10, reward: { gems: 500 } },
+    { id: 'rebirth20', label: "Chuyển Sinh 20 lần", cond: () => gameState.rebirthCount >= 20, reward: { gems: 900 } },
+    { id: 'rebirth50', label: "Chuyển Sinh 50 lần", cond: () => gameState.rebirthCount >= 50, reward: { gems: 2000 } },
+    { id: 'wb5', label: "Hạ gục 5 World Boss (lũy kế)", cond: () => gameState.stats.worldBossKills >= 5, reward: { gene: 100 } },
+    { id: 'pvp10', label: "Thắng 10 trận Đấu Trường Ma (lũy kế)", cond: () => gameState.pvpWins >= 10, reward: { gems: 40 } },
+    { id: 'dungeon20', label: "Hoàn thành 20 lượt Phó Bản (lũy kế)", cond: () => gameState.stats.dungeonRuns >= 20, reward: { data: 80 } },
+    { id: 'mythic5', label: "Sở hữu 5 trang bị Thần Thoại", cond: () => Object.values(gameState.equipment).filter(r => r === RARITY_TIERS.length - 1).length >= 5, reward: { gems: 150 } },
+    { id: 'allpower7', label: "Mở khóa cả 7 Hệ Sức Mạnh", cond: () => gameState.powerSystemsUnlocked.every(Boolean), reward: { gems: 200 } },
+    { id: 'onepowermax', label: "Tinh Luyện 1 Hệ Sức Mạnh lên Lv.5 (tối đa)", cond: () => (gameState.powerSystemLevels || []).some(l => l >= POWER_MAX_LEVEL), reward: { gems: 250 } },
+    { id: 'allpowermax', label: "Tinh Luyện CẢ 7 Hệ Sức Mạnh lên Lv.5 (Đại Thành)", cond: () => gameState.powerSystemsUnlocked.every(Boolean) && (gameState.powerSystemLevels || []).every(l => l >= POWER_MAX_LEVEL), reward: { gems: 1000 } }
+];
+function claimAchievement(id) {
+    if (gameState.achievementsClaimed.includes(id)) return;
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    if (!ach || !ach.cond()) return;
+
+    for (const k in ach.reward) {
+        if (k === 'gems') gameState.gems += ach.reward.gems;
+        else gameState.resources[k] += ach.reward[k];
+    }
+    gameState.achievementsClaimed.push(id);
+    soundEngine.playUpgrade();
+    addCombatLog(`[Thành Tựu] "${ach.label}" hoàn thành! Đã nhận thưởng.`);
+    renderAchievementList();
+    updateAppUI();
+    SaveManager.save();
+}
+function renderAchievementList() {
+    const container = document.getElementById('achievement-list');
+    if (!container) return;
+    container.innerHTML = ACHIEVEMENTS.map(a => {
+        const claimed = gameState.achievementsClaimed.includes(a.id);
+        const ready = a.cond() && !claimed;
+        const rewardLabel = Object.entries(a.reward).map(([k, v]) => `+${v} ${k === 'gems' ? 'Tinh Thạch' : (RESOURCE_LABELS[k] || k)}`).join(', ');
+        const label = claimed ? 'ĐÃ NHẬN' : (ready ? 'NHẬN' : 'CHƯA ĐẠT');
+        return `
+        <div class="zone-item">
+            <div>
+                <div class="zone-name">${a.label}</div>
+                <div class="zone-desc">Thưởng: ${rewardLabel}</div>
+            </div>
+            <button class="btn-action" style="width:auto; padding:4px 8px;" ${ready ? '' : 'disabled'} onclick="claimAchievement('${a.id}')">${label}</button>
+        </div>`;
+    }).join('');
+
+    // Chiều sâu Endgame - % Hoàn Thành tổng thể: Thành Tựu đã nhận + Hệ Sức Mạnh đã
+    // mở/Tinh Luyện tối đa + Trang Bị Thần Thoại, quy về 1 con số duy nhất để người
+    // chơi có mục tiêu dài hạn rõ ràng thay vì rải rác nhiều thanh tiến trình.
+    const pctEl = document.getElementById('txt-completion-pct');
+    if (pctEl) {
+        const achDone = gameState.achievementsClaimed.length;
+        const achTotal = ACHIEVEMENTS.length;
+        const powerUnlocked = gameState.powerSystemsUnlocked.filter(Boolean).length;
+        const powerMaxed = (gameState.powerSystemLevels || []).filter(l => l >= POWER_MAX_LEVEL).length;
+        const mythicCount = Object.values(gameState.equipment).filter(r => r === RARITY_TIERS.length - 1).length;
+        const powerScore = (powerUnlocked / POWER_SYSTEMS.length) * 0.5 + (powerMaxed / POWER_SYSTEMS.length) * 0.5;
+        const mythicScore = Math.min(1, mythicCount / EQUIPMENT_TYPES.length);
+        const achScore = achTotal > 0 ? achDone / achTotal : 0;
+        const overall = Math.round((achScore * 0.5 + powerScore * 0.3 + mythicScore * 0.2) * 100);
+        pctEl.innerText = `${overall}% Hoàn Thành`;
+    }
+}
+
+// Mục 6.1 - Phân loại trang bị theo hệ + mục 6.3 - 5 phẩm cấp độ hiếm.
+// Chế tạo là gacha nhẹ: roll ngẫu nhiên theo weight, chỉ nâng cấp nếu rarity mới cao hơn.
+const EQUIPMENT_TYPES = [
+    { id: "mech", name: "Súng Gatling / Pháo Rocket", he: "Cơ Giới", costRes: "scrap", cost: 15 },
+    { id: "blood", name: "Thánh Khí", he: "Huyết Tộc", costRes: "gene", cost: 20 },
+    { id: "undead", name: "Pháp Trượng", he: "Tử Linh", costRes: "gene", cost: 20 },
+    { id: "magictech", name: "Vũ Khí Phù Văn", he: "Magic-Tech", costRes: "comp", cost: 15 },
+    { id: "void", name: "Vũ Khí Quy Tắc", he: "Tinh Không", costRes: "data", cost: 15 }
+];
+
+const RARITY_TIERS = [
+    { id: 0, name: "Thường", color: "#94a3b8", statMult: 0.05, weight: 50 },
+    { id: 1, name: "Hiếm", color: "#38bdf8", statMult: 0.12, weight: 30 },
+    { id: 2, name: "Sử Thi", color: "#a78bfa", statMult: 0.25, weight: 14 },
+    { id: 3, name: "Huyền Thoại", color: "#fbbf24", statMult: 0.45, weight: 5 },
+    { id: 4, name: "Thần Thoại", color: "#f87171", statMult: 0.80, weight: 1 }
+];
+
+function rollRarity() {
+    const totalWeight = RARITY_TIERS.reduce((s, r) => s + r.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (const tier of RARITY_TIERS) {
+        if (roll < tier.weight) return tier.id;
+        roll -= tier.weight;
+    }
+    return 0;
+}
+
+function getEquipmentCPBonus() {
+    let bonus = 0;
+    for (const type of EQUIPMENT_TYPES) {
+        const rarityId = gameState.equipment[type.id];
+        if (rarityId !== undefined && rarityId !== null) bonus += RARITY_TIERS[rarityId].statMult;
+    }
+    return bonus;
+}
+
+function getActivePowerSystem() {
+    if (gameState.activePowerSystem === null) return null;
+    return POWER_SYSTEMS.find(p => p.id === gameState.activePowerSystem) || null;
+}
+
+function getActiveFaction() {
+    if (gameState.faction === null) return null;
+    return FACTIONS.find(f => f.id === gameState.faction) || null;
+}
+
+// Compute per-second resource rates using the same formulas as the live tick,
+// so offline gains and online gains always stay consistent.
+//
+// BUGFIX (kiểm tra sâu 08/2026): trước đây hàm này chỉ trả wood/stone/data.
+// - "ore" (Quặng) không có nguồn thu lẫn nơi tiêu ở bất kỳ đâu trong game -> tài
+//   nguyên chết hoàn toàn. Nay có thu passive nhẹ (dùng ở craftSwarmBot làm sink).
+// - "ruins" (Phế Tích) có nơi tiêu (building warehouse) nhưng KHÔNG có nguồn thu
+//   nào cả -> warehouse vĩnh viễn không nâng cấp được. Nay có thu passive nhẹ.
+// - zone.bonusRes "gene" (zone 1) và "scrap" (zone 4) trước đây không bao giờ áp
+//   dụng vì gene/scrap không nằm trong rates{} -> nay có thêm 2 dòng trickle nhỏ
+//   để bonus zone thực sự có tác dụng (gene/scrap vẫn chủ yếu đến từ farm chủ động
+//   qua Dungeon/PvP/World Boss như thiết kế gốc, đây chỉ là phần bù nhỏ).
+function getResourceRates() {
+    let woodMult = 1;
+    if (gameState.npcsUnlocked[0]) woodMult += 0.15;
+    woodMult += (gameState.buildings.autoline || 0) * BUILDING_DEFS.autoline.effectPerLvl;
+
+    let stoneMult = 1 + (gameState.buildings.autoline || 0) * BUILDING_DEFS.autoline.effectPerLvl;
+
+    const zone = WORLD_ZONES[gameState.currentWorld] || WORLD_ZONES[0];
+    const rates = {
+        wood: gameState.zombieLvl * woodMult,
+        stone: gameState.zombieLvl * 0.4 * stoneMult,
+        ore: gameState.zombieLvl * 0.2,
+        ruins: gameState.zombieLvl * 0.12,
+        gene: gameState.zombieLvl * 0.03,
+        scrap: gameState.zombieLvl * 0.06,
+        data: gameState.npcsUnlocked[6] ? 1 : 0
+    };
+    if (zone.bonusRes === "wood") rates.wood *= (1 + zone.bonusPct);
+    if (zone.bonusRes === "stone") rates.stone *= (1 + zone.bonusPct);
+    if (zone.bonusRes === "data") rates.data *= (1 + zone.bonusPct);
+    if (zone.bonusRes === "gene") rates.gene *= (1 + zone.bonusPct);
+    if (zone.bonusRes === "scrap") rates.scrap *= (1 + zone.bonusPct);
+
+    const ps = getActivePowerSystem();
+    if (ps && ps.resMult) {
+        const psResMult = ps.resMult * getPowerLevelScale(ps.id);
+        rates.wood *= (1 + psResMult);
+        rates.stone *= (1 + psResMult);
+        rates.ore *= (1 + psResMult);
+        rates.ruins *= (1 + psResMult);
+        rates.data *= (1 + psResMult);
+    }
+
+    // Mục 10 - Tiện ích Tăng tốc Treo Máy (Speed-up Utility): x2 tốc độ trong thời hạn mua.
+    if (gameState.speedBoostUntil && Date.now() < gameState.speedBoostUntil) {
+        rates.wood *= 2;
+        rates.stone *= 2;
+        rates.ore *= 2;
+        rates.ruins *= 2;
+        rates.gene *= 2;
+        rates.scrap *= 2;
+        rates.data *= 2;
+    }
+
+    // Mục 11 - Chuyển Sinh (Rebirth/Prestige): bonus vĩnh viễn cộng dồn qua các vòng.
+    if (gameState.rebirthMult > 0) {
+        rates.wood *= (1 + gameState.rebirthMult);
+        rates.stone *= (1 + gameState.rebirthMult);
+        rates.ore *= (1 + gameState.rebirthMult);
+        rates.ruins *= (1 + gameState.rebirthMult);
+        rates.data *= (1 + gameState.rebirthMult);
+    }
+    return rates;
+}
+
+function getGeneMultiplier() {
+    let mult = 1 + (gameState.buildings.warehouse || 0) * BUILDING_DEFS.warehouse.effectPerLvl;
+    const ps = getActivePowerSystem();
+    if (ps && ps.resMult) mult *= (1 + ps.resMult * getPowerLevelScale(ps.id));
+    return mult;
+}
+
+function getBuildingCost(key) {
+    const def = BUILDING_DEFS[key];
+    const lvl = gameState.buildings[key] || 0;
+    return Math.floor(def.baseCost * Math.pow(1.6, lvl));
+}
+
+class SaveManager {
+    static save() {
+        try {
+            gameState.lastActiveTs = Date.now();
+            localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(gameState));
+        } catch(e) {
+            console.error("Lỗi lưu game:", e);
+        }
+    }
+
+    // BUGFIX: shallow merge ({...gameState, ...parsed}) ghi đè toàn bộ object lồng
+    // nhau (resources, buildings, equipment...) thay vì merge từng field. Save cũ
+    // thiếu 1 key mới thêm ở bản sau (vd thêm building/resource mới) sẽ mất field
+    // đó hoàn toàn thay vì giữ default. Deep-merge 1 cấp cho mọi object lồng nhau.
+    static deepMerge(defaults, saved) {
+        const out = { ...defaults };
+        for (const key in saved) {
+            const dVal = defaults[key];
+            const sVal = saved[key];
+            if (dVal && sVal && typeof dVal === 'object' && typeof sVal === 'object' && !Array.isArray(dVal)) {
+                out[key] = { ...dVal, ...sVal };
+            } else {
+                out[key] = sVal;
+            }
+        }
+        return out;
+    }
+
+    static load() {
+        try {
+            const data = localStorage.getItem(CONFIG.SAVE_KEY);
+            if (data) {
+                const parsed = JSON.parse(data);
+                gameState = SaveManager.deepMerge(gameState, parsed);
+                SaveManager.resolveOfflineProgress(parsed.lastActiveTs);
+            }
+        } catch(e) {
+            console.error("Lỗi tải game:", e);
+        }
+    }
+
+    // Chiều sâu solo (mục "polish kỹ thuật") - Export/Import save thủ công dưới
+    // dạng file JSON. Vì single-player chạy hoàn toàn local (localStorage), mất
+    // dữ liệu trình duyệt = mất toàn bộ tiến trình; đây là cách backup/khôi phục
+    // độc lập với máy/trình duyệt.
+    static exportSave() {
+        try {
+            gameState.lastActiveTs = Date.now();
+            const dataStr = JSON.stringify(gameState, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            a.href = url;
+            a.download = `zombie-commander-save-${ts}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            addCombatLog("[Hệ Thống] Đã xuất file Save — lưu file này để backup!");
+        } catch (e) {
+            console.error("Lỗi xuất save:", e);
+            addCombatLog("[Hệ Thống] Xuất Save thất bại.");
+        }
+    }
+
+    static importSave(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (!parsed || typeof parsed !== 'object' || !parsed.resources) {
+                    addCombatLog("[Hệ Thống] File Save không hợp lệ.");
+                    return;
+                }
+                gameState = SaveManager.deepMerge(gameState, parsed);
+                SaveManager.save();
+                addCombatLog("[Hệ Thống] Đã nhập Save thành công! Đang làm mới giao diện...");
+                updateAppUI();
+                if (renderEngine) renderEngine.updatePlayerAppearance();
+            } catch (err) {
+                console.error("Lỗi nhập save:", err);
+                addCombatLog("[Hệ Thống] Không đọc được file Save (sai định dạng JSON).");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // Mục 3 - Tính toán Treo Máy (Idle/Offline): dồn tài nguyên theo thời gian
+    // vắng mặt thực tế, giới hạn OFFLINE_CAP_SECONDS, rồi hiện popup tổng kết.
+    static resolveOfflineProgress(lastTs) {
+        if (!lastTs) return;
+        const elapsedSec = Math.floor((Date.now() - lastTs) / 1000);
+        if (elapsedSec < 30) return; // don't bother for quick tab-switches
+
+        // Đột Phá Lv.5 Thần Thụ (id 4): trần offline +2 giờ (10h thay vì 8h).
+        const offlineCap = (gameState.activePowerSystem === 4 && isPowerSystemMaxed(4))
+            ? OFFLINE_CAP_SECONDS + 2 * 3600 : OFFLINE_CAP_SECONDS;
+        const cappedSec = Math.min(elapsedSec, offlineCap);
+        const rates = getResourceRates();
+        const gained = {
+            wood: Math.floor(rates.wood * cappedSec),
+            stone: Math.floor(rates.stone * cappedSec),
+            ore: Math.floor(rates.ore * cappedSec),
+            ruins: Math.floor(rates.ruins * cappedSec),
+            gene: Math.floor(rates.gene * cappedSec),
+            scrap: Math.floor(rates.scrap * cappedSec),
+            data: Math.floor(rates.data * cappedSec)
+        };
+
+        gameState.resources.wood += gained.wood;
+        gameState.resources.stone += gained.stone;
+        gameState.resources.ore += gained.ore;
+        gameState.resources.ruins += gained.ruins;
+        gameState.resources.gene += gained.gene;
+        gameState.resources.scrap += gained.scrap;
+        gameState.resources.data += gained.data;
+
+        window.pendingOfflineReport = { elapsedSec, cappedSec, gained };
+    }
+}
+
+// ==========================================
+// MỤC "CÀI ĐẶT" - EXPORT / IMPORT SAVE
+// ==========================================
+// Mã hóa an toàn cho chuỗi tiếng Việt (có dấu) khi đưa qua btoa/atob (vốn chỉ
+// hỗ trợ Latin1) bằng cách đi qua encodeURIComponent/decodeURIComponent trước.
+function encodeSaveString(obj) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+}
+function decodeSaveString(str) {
+    return JSON.parse(decodeURIComponent(escape(atob(str.trim()))));
+}
+
+function showSettingsMsg(msg, isError) {
+    const el = document.getElementById('settings-msg');
+    if (!el) return;
+    el.style.color = isError ? 'var(--accent-red, #ef4444)' : 'var(--accent-amber, #f59e0b)';
+    el.innerText = msg;
+}
+
+function openSettings() {
+    soundEngine.playClick();
+    document.getElementById('settings-modal').style.display = 'flex';
+    document.getElementById('export-code-area').value = '';
+    document.getElementById('import-code-area').value = '';
+    showSettingsMsg('', false);
+}
+
+function closeSettings() {
+    soundEngine.playClick();
+    document.getElementById('settings-modal').style.display = 'none';
+}
+
+function doExportSave() {
+    try {
+        gameState.lastActiveTs = Date.now();
+        const code = encodeSaveString(gameState);
+        document.getElementById('export-code-area').value = code;
+        showSettingsMsg('Đã tạo mã save. Sao chép hoặc tải file để lưu lại.', false);
+    } catch(e) {
+        console.error(e);
+        showSettingsMsg('Lỗi khi tạo mã save.', true);
+    }
+}
+
+function copyExportCode() {
+    const area = document.getElementById('export-code-area');
+    if (!area.value) { doExportSave(); }
+    area.select();
+    area.setSelectionRange(0, 999999);
+    try {
+        navigator.clipboard.writeText(area.value).then(() => {
+            showSettingsMsg('Đã sao chép mã save vào clipboard!', false);
+        }).catch(() => {
+            document.execCommand('copy');
+            showSettingsMsg('Đã sao chép mã save vào clipboard!', false);
+        });
+    } catch(e) {
+        document.execCommand('copy');
+        showSettingsMsg('Đã sao chép mã save vào clipboard!', false);
+    }
+}
+
+function downloadSaveFile() {
+    if (!document.getElementById('export-code-area').value) { doExportSave(); }
+    const code = document.getElementById('export-code-area').value;
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `zombie-commander-save-${ts}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showSettingsMsg('Đã tải file save.', false);
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('import-code-area').value = e.target.result;
+        showSettingsMsg('Đã nạp nội dung file, bấm NẠP SAVE để áp dụng.', false);
+    };
+    reader.onerror = () => showSettingsMsg('Không đọc được file.', true);
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function doImportSave() {
+    const raw = document.getElementById('import-code-area').value;
+    if (!raw || !raw.trim()) {
+        showSettingsMsg('Chưa có mã save để nhập.', true);
+        return;
+    }
+    if (!confirm('Nạp save này sẽ GHI ĐÈ toàn bộ tiến trình hiện tại. Tiếp tục?')) return;
+    try {
+        const parsed = decodeSaveString(raw);
+        if (!parsed || typeof parsed !== 'object') throw new Error('invalid save');
+        localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(parsed));
+        showSettingsMsg('Nạp save thành công! Đang tải lại...', false);
+        setTimeout(() => location.reload(), 700);
+    } catch(e) {
+        console.error(e);
+        showSettingsMsg('Mã save không hợp lệ, không thể nhập.', true);
+    }
+}
+
+function doResetSave() {
+    if (!confirm('XÓA TOÀN BỘ tiến trình hiện tại? Hành động này không thể hoàn tác. Hãy XUẤT SAVE trước nếu muốn giữ lại.')) return;
+    if (!confirm('Xác nhận lần cuối: xóa vĩnh viễn toàn bộ dữ liệu game?')) return;
+    localStorage.removeItem(CONFIG.SAVE_KEY);
+    location.reload();
+}
+
+// Mục 7 - Hồi Vé Cày (Farming Ticket) theo thời gian thực đã trôi qua,
+// dùng chung logic cho cả lúc đang online (tick 1s) lẫn lúc vừa quay lại sau khi vắng mặt.
+function regenTickets() {
+    if (gameState.tickets >= TICKET_CAP) { gameState.ticketLastTs = Date.now(); return; }
+    const elapsedSec = Math.floor((Date.now() - gameState.ticketLastTs) / 1000);
+    const gained = Math.floor(elapsedSec / TICKET_REGEN_SEC);
+    if (gained > 0) {
+        gameState.tickets = Math.min(TICKET_CAP, gameState.tickets + gained);
+        gameState.ticketLastTs += gained * TICKET_REGEN_SEC * 1000;
+    }
+}
+
+// Mục 7.3 - World Boss: reset lượt tấn công mỗi ngày (theo ngày lịch của máy),
+// hp tối đa scale theo Chapter hiện tại nên càng về sau boss càng khó bào mòn.
+function resetWorldBossIfNeeded() {
+    const today = new Date().toDateString();
+    const wb = gameState.worldBoss;
+    if (wb.lastResetDate !== today) {
+        wb.lastResetDate = today;
+        wb.attemptsLeft = WORLDBOSS_DAILY_ATTEMPTS;
+    }
+    if (!wb.maxHp || wb.maxHp <= 0) {
+        wb.maxHp = WORLDBOSS_BASE_HP + gameState.stats.worldBossKills * WORLDBOSS_HP_LINEAR_STEP;
+        wb.hp = wb.maxHp;
+    }
+}
+
+function showOfflineSummary() {
+    const report = window.pendingOfflineReport;
+    if (!report) return;
+
+    const hrs = Math.floor(report.cappedSec / 3600);
+    const mins = Math.floor((report.cappedSec % 3600) / 60);
+    const timeStr = hrs > 0 ? `${hrs} giờ ${mins} phút` : `${mins} phút`;
+    const wasCapped = report.elapsedSec > OFFLINE_CAP_SECONDS;
+
+    const lines = Object.entries(report.gained)
+        .filter(([, v]) => v > 0)
+        .map(([k, v]) => `+${v} ${RESOURCE_LABELS[k] || k}`)
+        .join('<br>');
+
+    const modal = document.createElement('div');
+    modal.id = 'offline-modal';
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(2,6,23,0.85); z-index:100; display:flex; align-items:center; justify-content:center;';
+    modal.innerHTML = `
+        <div style="background:var(--panel-bg); border:1px solid var(--accent-blue); border-radius:10px; padding:16px; width:80%; max-width:320px; text-align:center;">
+            <div style="font-size:12px; font-weight:bold; color:var(--accent-blue); margin-bottom:6px;">TỔNG KẾT TREO MÁY</div>
+            <div style="font-size:9px; color:var(--text-muted); margin-bottom:10px;">Vắng mặt: ${timeStr}${wasCapped ? ' (đã đạt giới hạn 8 giờ)' : ''}</div>
+            <div style="font-size:11px; color:var(--accent-green); line-height:1.6; margin-bottom:12px;">${lines || 'Không có tài nguyên mới'}</div>
+            <button class="btn-action" id="btn-offline-claim">NHẬN & TIẾP TỤC</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('btn-offline-claim').onclick = () => {
+        modal.remove();
+        window.pendingOfflineReport = null;
+        updateAppUI();
+        SaveManager.save();
+    };
+}
+
+const RESOURCE_LABELS = {
+    wood: 'Gỗ', stone: 'Đá', ore: 'Quặng', ruins: 'Phế Tích',
+    scrap: 'Phế Liệu', comp: 'Linh Kiện', data: 'Lõi Data', gene: 'Mẫu Gen'
+};
+
+// Mục 8 - Toast cốt truyện, hiện không chặn game (auto-battle vẫn chạy tiếp)
+// mỗi khi bước sang Chapter mới lần đầu tiên.
+function showChapterStory(ch) {
+    if (gameState.lastStoryChapterShown >= ch) return;
+    gameState.lastStoryChapterShown = ch;
+    const story = getChapterStory(ch);
+    addCombatLog(`📖 ${story.title}: ${story.text}`);
+
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed; left:50%; top:14%; transform:translateX(-50%); z-index:90; background:var(--panel-bg); border:1px solid var(--accent-purple); border-radius:8px; padding:10px 14px; width:80%; max-width:300px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.5); opacity:0; transition:opacity 0.4s ease;';
+    toast.innerHTML = `<div style="font-size:10px; font-weight:bold; color:var(--accent-purple); margin-bottom:4px;">${story.title}</div><div style="font-size:8px; color:var(--text-muted); line-height:1.5;">${story.text}</div>`;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.style.opacity = '1');
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 5000);
+}
+
+// ==========================================
+// 2. AUDIO SYNTHESIZER ENGINE
+// ==========================================
+class SoundFXEngine {
+    constructor() {
+        this.ctx = null;
+    }
+
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    playTone(freq, duration, type = 'sine', volume = 0.1) {
+        this.init();
+        if (!this.ctx) return;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, this.ctx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+
+    playClick() { this.playTone(800, 0.04, 'sine', 0.05); }
+    playUpgrade() { this.playTone(587.33, 0.1, 'triangle', 0.1); setTimeout(() => this.playTone(880, 0.15, 'triangle', 0.1), 100); }
+    playHit() { this.playTone(120, 0.15, 'sawtooth', 0.15); }
+    playBossSpawn() { this.playTone(80, 0.5, 'square', 0.2); }
+}
+const soundEngine = new SoundFXEngine();
+
+// ==========================================
+// 3. SHADER ENGINE (CEL-SHADING GLSL)
+// ==========================================
+const CelShaderMaterial = {
+    uniforms: {
+        uBaseColor: { value: new THREE.Color(0x38bdf8) },
+        uLightPos: { value: new THREE.Vector3(5, 10, 7) }
+    },
+    vertexShader: `
+        // #ifdef USE_INSTANCING: three.js tự động khai báo attribute mat4 instanceMatrix
+        // và định nghĩa USE_INSTANCING khi shader này được gán cho THREE.InstancedMesh
+        // (dùng cho swarm zombie), nhưng KHÔNG tự áp dụng phép biến đổi vào gl_Position
+        // như với các vật liệu dựng sẵn (MeshStandardMaterial...) — phải cộng tay ở đây,
+        // nếu không toàn bộ instance sẽ chồng lên gốc tọa độ (0,0,0) thay vì đúng vị trí.
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        void main() {
+            vec3 transformedPosition = position;
+            vec3 transformedNormal = normal;
+            #ifdef USE_INSTANCING
+                transformedPosition = (instanceMatrix * vec4(transformedPosition, 1.0)).xyz;
+                transformedNormal = mat3(instanceMatrix) * transformedNormal;
+            #endif
+            vNormal = normalize(normalMatrix * transformedNormal);
+            vec4 mvPosition = modelViewMatrix * vec4(transformedPosition, 1.0);
+            vViewPosition = -mvPosition.xyz;
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    `,
+    fragmentShader: `
+        uniform vec3 uBaseColor;
+        uniform vec3 uLightPos;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+
+        void main() {
+            vec3 normal = normalize(vNormal);
+            vec3 lightDir = normalize(uLightPos);
+            float NdotL = max(0.0, dot(normal, lightDir));
+
+            float intensity = 0.3;
+            if (NdotL > 0.75) intensity = 1.0;
+            else if (NdotL > 0.35) intensity = 0.65;
+
+            vec3 viewDir = normalize(vViewPosition);
+            float rim = 1.0 - max(0.0, dot(viewDir, normal));
+            float rimIntensity = pow(rim, 3.0);
+            vec3 rimColor = vec3(1.0) * step(0.65, rimIntensity);
+
+            gl_FragColor = vec4((uBaseColor * intensity) + rimColor, 1.0);
+        }
+    `
+};
+
+// ==========================================
+// 4. 3D RENDER ENGINE & INSTANCED SWARM
+// ==========================================
+class RenderEngine3D {
+    constructor() {
+        this.container = document.getElementById('viewport-container');
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(45, this.container.clientWidth / this.container.clientHeight, 0.1, 1000);
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+
+        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.container.appendChild(this.renderer.domElement);
+
+        this.camera.position.set(0, 7, 10);
+        this.camera.lookAt(0, 0, 0);
+
+        this.bossActive = false;
+        this.bossHp = 100;
+        this.bossMaxHp = 100;
+        this.bossTimer = 0;
+
+        // Movement state driven by the virtual joystick
+        this.moveDir = { x: 0, z: 0 };
+        this.moveSpeed = 3.2; // world units / second
+        this.lastFrameTime = performance.now();
+        this.worldBound = 6; // keep the player within the visible ground plane
+
+        this.setupLights();
+        this.setupGround();
+        this.setupPlayer();
+        this.setupInstancedSwarm();
+        this.setupParticleAura();
+        this.setupJoystick();
+
+        window.addEventListener('resize', () => this.onResize());
+    }
+
+    setupGround() {
+        const geo = new THREE.CircleGeometry(9, 32);
+        const mat = new THREE.MeshLambertMaterial({ color: 0x0b1220 });
+        this.groundMesh = new THREE.Mesh(geo, mat);
+        this.groundMesh.rotation.x = -Math.PI / 2;
+        this.scene.add(this.groundMesh);
+
+        const grid = new THREE.GridHelper(18, 18, 0x1e293b, 0x1e293b);
+        this.scene.add(grid);
+
+        this.scene.fog = new THREE.Fog(0x0b1220, 12, 26);
+    }
+
+    // Mục 4.1 - Chuyển bối cảnh viewport theo khu vực thế giới đang chọn:
+    // đổi màu nền/mặt đất/sương mù để gợi biome (không tải model/map riêng,
+    // vì bản build này vẫn dùng chung 1 viewport — xem ghi chú tiến độ).
+    setWorldZone(zoneId) {
+        const zone = WORLD_ZONES[zoneId] || WORLD_ZONES[0];
+        this.scene.background = new THREE.Color(zone.bg);
+        if (this.groundMesh) this.groundMesh.material.color.setHex(zone.ground);
+        if (this.scene.fog) this.scene.fog.color.setHex(zone.fog);
+    }
+
+    setupJoystick() {
+        const zone = document.getElementById('joystick-zone');
+        const stick = document.getElementById('joystick-stick');
+        if (!zone || !stick) return;
+
+        const maxRadius = 28; // px the stick can travel from center
+        let active = false;
+        let originX = 0, originY = 0;
+
+        const setStick = (dx, dy) => {
+            const dist = Math.min(Math.hypot(dx, dy), maxRadius);
+            const angle = Math.atan2(dy, dx);
+            const sx = Math.cos(angle) * dist;
+            const sy = Math.sin(angle) * dist;
+            stick.style.transform = `translate(${sx}px, ${sy}px)`;
+
+            // Normalized -1..1 direction, mapped to 3D X/Z plane
+            this.moveDir.x = dist > 4 ? Math.cos(angle) : 0;
+            this.moveDir.z = dist > 4 ? Math.sin(angle) : 0;
+        };
+
+        const resetStick = () => {
+            active = false;
+            stick.style.transform = 'translate(0px, 0px)';
+            this.moveDir.x = 0;
+            this.moveDir.z = 0;
+        };
+
+        const getPoint = (e) => {
+            const t = e.touches ? e.touches[0] : e;
+            return { x: t.clientX, y: t.clientY };
+        };
+
+        const onStart = (e) => {
+            e.preventDefault();
+            const rect = zone.getBoundingClientRect();
+            originX = rect.left + rect.width / 2;
+            originY = rect.top + rect.height / 2;
+            active = true;
+            const p = getPoint(e);
+            setStick(p.x - originX, p.y - originY);
+        };
+
+        const onMove = (e) => {
+            if (!active) return;
+            e.preventDefault();
+            const p = getPoint(e);
+            setStick(p.x - originX, p.y - originY);
+        };
+
+        const onEnd = (e) => {
+            if (e) e.preventDefault();
+            resetStick();
+        };
+
+        zone.addEventListener('touchstart', onStart, { passive: false });
+        zone.addEventListener('touchmove', onMove, { passive: false });
+        zone.addEventListener('touchend', onEnd, { passive: false });
+        zone.addEventListener('touchcancel', onEnd, { passive: false });
+
+        // Mouse support for desktop testing
+        zone.addEventListener('mousedown', onStart);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onEnd);
+    }
+
+    updatePlayerMovement(dt) {
+        if (!this.playerGroup) return;
+        const { x, z } = this.moveDir;
+        if (x === 0 && z === 0) return;
+
+        // Screen-space joystick X maps to world X; joystick Y (down) maps to world +Z (toward camera)
+        const nx = this.playerGroup.position.x + x * this.moveSpeed * dt;
+        const nz = this.playerGroup.position.z + z * this.moveSpeed * dt;
+
+        const dist = Math.hypot(nx, nz);
+        if (dist <= this.worldBound) {
+            this.playerGroup.position.x = nx;
+            this.playerGroup.position.z = nz;
+        }
+
+        // Face movement direction
+        this.playerGroup.rotation.y = Math.atan2(x, z);
+    }
+
+    setupLights() {
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+        dirLight.position.set(5, 10, 7);
+        this.scene.add(ambLight, dirLight);
+    }
+
+    setupPlayer() {
+        this.playerGroup = new THREE.Group();
+        const geo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8);
+        const mat = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(CelShaderMaterial.uniforms),
+            vertexShader: CelShaderMaterial.vertexShader,
+            fragmentShader: CelShaderMaterial.fragmentShader
+        });
+        mat.uniforms.uBaseColor.value = new THREE.Color(0x38bdf8);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = 0.6;
+        this.playerMesh = mesh;
+        this.playerGroup.add(mesh);
+
+        // Mục 6.4 - Trang bị thay đổi hình dáng nhân vật: quả cầu hào quang quỹ đạo
+        // quanh nhân vật, màu/kích thước phản ánh độ hiếm trang bị cao nhất đang mặc.
+        const gearGeo = new THREE.SphereGeometry(0.12, 10, 10);
+        const gearMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+        this.playerGearAura = new THREE.Mesh(gearGeo, gearMat);
+        this.playerGearAura.position.set(0.7, 1.1, 0);
+        this.playerGroup.add(this.playerGearAura);
+
+        this.scene.add(this.playerGroup);
+        this.updatePlayerAppearance();
+    }
+
+    // Mục 5 - Màu hào quang nhân vật đổi theo Hệ Sức Mạnh đang kích hoạt;
+    // Mục 6.4 - Quả cầu quỹ đạo hiện ra theo độ hiếm trang bị cao nhất.
+    updatePlayerAppearance() {
+        if (!this.playerMesh) return;
+        const ps = getActivePowerSystem();
+        const skin = SKINS.find(s => s.id === gameState.skinId);
+        const psColor = (skin && skin.color !== null) ? skin.color : (ps ? (POWER_COLORS[ps.id] || 0x38bdf8) : 0x38bdf8);
+        this.playerMesh.material.uniforms.uBaseColor.value.set(psColor);
+
+        if (this.playerGearAura) {
+            const rarityId = getHighestEquippedRarity();
+            if (rarityId < 0) {
+                this.playerGearAura.material.opacity = 0;
+            } else {
+                const tier = RARITY_TIERS[rarityId];
+                this.playerGearAura.material.color.set(tier.color);
+                this.playerGearAura.material.opacity = 0.85;
+                const scale = 0.6 + rarityId * 0.25;
+                this.playerGearAura.scale.set(scale, scale, scale);
+            }
+        }
+    }
+
+    // Mục "đồng bộ phong cách hình ảnh": trước đây swarm zombie dùng MeshLambertMaterial
+    // (shading mượt/PBR thường) trong khi Player + Boss dùng CelShaderMaterial (toon/cel-shading
+    // bậc thang + viền rim sáng) -> lệch phong cách hình ảnh. Nay swarm dùng chung shader toon
+    // này (màu xanh lục đặc trưng của Zombie Bầy Đàn) để toàn bộ game đồng nhất 1 phong cách.
+    setupInstancedSwarm() {
+        this.maxZombies = 300;
+        const geo = new THREE.BoxGeometry(0.25, 0.4, 0.25);
+        const mat = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(CelShaderMaterial.uniforms),
+            vertexShader: CelShaderMaterial.vertexShader,
+            fragmentShader: CelShaderMaterial.fragmentShader
+        });
+        mat.uniforms.uBaseColor.value = new THREE.Color(0x10b981);
+        this.instancedZombies = new THREE.InstancedMesh(geo, mat, this.maxZombies);
+        this.scene.add(this.instancedZombies);
+        this.dummy = new THREE.Object3D();
+    }
+
+    setupParticleAura() {
+        const count = 80;
+        const geo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+
+        for (let i = 0; i < count * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 8;
+            positions[i + 1] = Math.random() * 3;
+            positions[i + 2] = (Math.random() - 0.5) * 8;
+        }
+
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const mat = new THREE.PointsMaterial({ color: 0x10b981, size: 0.08, transparent: true, opacity: 0.5 });
+        this.particles = new THREE.Points(geo, mat);
+        this.scene.add(this.particles);
+    }
+
+    spawnBoss() {
+        if (this.bossMesh) this.scene.remove(this.bossMesh);
+        
+        const geo = new THREE.DodecahedronGeometry(1.2);
+        const mat = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(CelShaderMaterial.uniforms),
+            vertexShader: CelShaderMaterial.vertexShader,
+            fragmentShader: CelShaderMaterial.fragmentShader
+        });
+        mat.uniforms.uBaseColor.value = new THREE.Color(0xef4444);
+        this.bossMesh = new THREE.Mesh(geo, mat);
+        this.bossMesh.position.set(0, 1.2, -3.5);
+        this.scene.add(this.bossMesh);
+
+        this.bossActive = true;
+        // Mục "cân bằng số liệu" (đã test qua mô phỏng 1000 vòng headless, xem ghi chú
+        // đầy đủ ở khai báo REBIRTH_HP_LINEAR_STEP phía trên): HP Boss = hàm mũ theo
+        // Chapter (giữ nguyên số mũ gốc 1.7), nhân thêm hệ số CỘNG DỒN TUYẾN TÍNH theo
+        // số lần Chuyển Sinh (KHÔNG đưa vào số mũ, vì như vậy vẫn là cấp số nhân trá hình).
+        this.bossMaxHp = Math.floor(150 * Math.pow(gameState.chapter, REBIRTH_BASE_HP_EXP) * (1 + gameState.rebirthCount * REBIRTH_HP_LINEAR_STEP));
+        this.bossHp = this.bossMaxHp;
+
+        document.getElementById('boss-hp-bar').style.display = 'block';
+        document.getElementById('boss-title').innerText = `BOSS TRÙM CHAPTER ${gameState.chapter}`;
+        soundEngine.playBossSpawn();
+    }
+
+    removeBoss() {
+        if (this.bossMesh) this.scene.remove(this.bossMesh);
+        this.bossActive = false;
+        document.getElementById('boss-hp-bar').style.display = 'none';
+    }
+
+    // Dùng chung cho cả sát thương tick tự động lẫn Kỹ Năng Chủ Động (mục 5)
+    // để tránh trùng lặp logic hạ Boss / thưởng Chapter / Auto-battle tiếp theo.
+    applyBossDamage(dmg) {
+        if (!this.bossActive || !this.bossMesh) return;
+        this.bossHp = Math.max(0, this.bossHp - dmg);
+
+        const percent = (this.bossHp / this.bossMaxHp) * 100;
+        document.getElementById('boss-hp-inner').style.width = `${percent}%`;
+
+        this.spawnDamageText(dmg, this.bossMesh.position);
+        soundEngine.playHit();
+
+        if (this.bossHp <= 0) {
+            this.removeBoss();
+            const rewardGene = Math.floor((20 + gameState.chapter * 5) * getGeneMultiplier());
+            gameState.resources.gene += rewardGene;
+            addCombatLog(`ĐÃ TIEU DIET BOSS CHAPTER ${gameState.chapter}! +${rewardGene} Mẫu Gen`);
+            gameState.chapter++;
+            updateAppUI();
+            renderWorldList(); // chapter mới có thể mở khóa zone mới
+            showChapterStory(gameState.chapter);
+            SaveManager.save();
+
+            // Mục 3.2 - Auto-battle: nếu bật, tự khiêu chiến Boss chapter kế tiếp
+            // sau một khoảng nghỉ ngắn, mô phỏng "dọn bản đồ đã sạch" tự động.
+            if (gameState.autoBattle) {
+                setTimeout(() => {
+                    if (gameState.autoBattle && renderEngine && !renderEngine.bossActive) {
+                        renderEngine.spawnBoss();
+                        addCombatLog(`[Auto-battle] Tự động khiêu chiến Boss Chapter ${gameState.chapter}!`);
+                    }
+                }, 2500);
+            }
+        }
+    }
+
+    spawnDamageText(amount, pos3D) {
+        const layer = document.getElementById('damage-text-layer');
+        if (!layer) return;
+
+        const vec = pos3D.clone().project(this.camera);
+        const x = (vec.x * 0.5 + 0.5) * this.container.clientWidth;
+        const y = (-(vec.y * 0.5) + 0.5) * this.container.clientHeight;
+
+        const el = document.createElement('div');
+        el.style.cssText = `position:absolute; left:${x}px; top:${y}px; font-weight:bold; font-size:11px; color:#f59e0b; transform:translate(-50%,-50%); transition:all 0.4s ease-out; opacity:1;`;
+        el.innerText = `-${Math.floor(amount)}`;
+        layer.appendChild(el);
+
+        requestAnimationFrame(() => {
+            el.style.top = `${y - 25}px`;
+            el.style.opacity = '0';
+        });
+
+        setTimeout(() => el.remove(), 400);
+    }
+
+    updateSwarmPositions() {
+        const count = Math.min(calculateSwarmCapacity(), this.maxZombies);
+        const time = Date.now() * 0.003;
+
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2 + time * 0.4;
+            const radius = 1.2 + (i % 6) * 0.25;
+            this.dummy.position.set(
+                this.playerGroup.position.x + Math.cos(angle) * radius,
+                0.2,
+                this.playerGroup.position.z + Math.sin(angle) * radius
+            );
+            this.dummy.rotation.y = -angle;
+            this.dummy.updateMatrix();
+            this.instancedZombies.setMatrixAt(i, this.dummy.matrix);
+        }
+
+        this.instancedZombies.count = count;
+        this.instancedZombies.instanceMatrix.needsUpdate = true;
+    }
+
+    render() {
+        const now = performance.now();
+        const dt = Math.min((now - this.lastFrameTime) / 1000, 0.1);
+        this.lastFrameTime = now;
+
+        this.updatePlayerMovement(dt);
+        this.camera.position.x = this.playerGroup.position.x;
+        this.camera.position.z = this.playerGroup.position.z + 10;
+        this.camera.lookAt(this.playerGroup.position.x, 0, this.playerGroup.position.z);
+
+        this.updateSwarmPositions();
+
+        if (this.playerGearAura && this.playerGearAura.material.opacity > 0) {
+            const t = now * 0.002;
+            this.playerGearAura.position.set(Math.cos(t) * 0.7, 1.1 + Math.sin(t * 1.5) * 0.1, Math.sin(t) * 0.7);
+        }
+
+        if (this.bossActive && this.bossMesh) {
+            this.bossMesh.rotation.y += 0.01;
+            this.bossTimer++;
+
+            // BUGFIX: node "licker" (+15%/cấp tốc đánh) và "fusion" (+200%/cấp dmg)
+            // giờ thực sự ảnh hưởng nhịp đánh & sát thương tự động lên Boss.
+            const atkInterval = Math.max(10, Math.round(45 / getSkillTreeAtkSpeedMult()));
+            if (this.bossTimer % atkInterval === 0) {
+                const totalCP = calculateTotalCP();
+                const towerMult = 1 + (gameState.buildings.watchtower || 0) * BUILDING_DEFS.watchtower.effectPerLvl;
+                const ps = getActivePowerSystem();
+                const psDmgMult = 1 + (ps ? ps.dmgMult * getPowerLevelScale(ps.id) : 0);
+                const dmg = (totalCP / 8) * (Math.random() * 0.3 + 0.85) * towerMult * psDmgMult * getSkillTreeDmgMult();
+                this.applyBossDamage(dmg);
+            }
+        }
+
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    onResize() {
+        this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    }
+}
+
+// ==========================================
+// 5. SKILL TREE NODE GRAPH ENGINE
+// ==========================================
+class SkillTreeEngine {
+    constructor() {
+        this.canvas = document.getElementById('skill-tree-canvas');
+        this.container = document.getElementById('skill-tree-nodes');
+        this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+        this.selectedId = null;
+
+        this.nodes = [
+            { id: 'base', name: 'Sơ Khai', icon: '🧟', x: 50, y: 80, cost: 0, parentId: null, desc: 'Tăng CP cơ bản.' },
+            { id: 'licker', name: 'Tốc Độ', icon: '⚡', x: 25, y: 50, cost: 10, parentId: 'base', desc: '+15% Tốc độ đánh.' },
+            { id: 'tyrant', name: 'Sức Mạnh', icon: '🛡️', x: 75, y: 50, cost: 10, parentId: 'base', desc: '+25% Máu bầy đàn.' },
+            { id: 'fusion', name: 'Hỏa Lực', icon: '🔥', x: 25, y: 20, cost: 25, parentId: 'licker', desc: 'Bắn tia năng lượng gây 200% DMG.' },
+            { id: 'hybrid', name: 'Bá Chủ', icon: '👑', x: 75, y: 20, cost: 25, parentId: 'tyrant', desc: 'Nhân đôi CP lực chiến.' }
+        ];
+
+        setTimeout(() => this.resize(), 150);
+        this.render();
+    }
+
+    resize() {
+        if (!this.canvas) return;
+        this.canvas.width = this.canvas.parentElement.clientWidth;
+        this.canvas.height = this.canvas.parentElement.clientHeight;
+        this.drawConnections();
+    }
+
+    drawConnections() {
+        if (!this.ctx) return;
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        this.nodes.forEach(node => {
+            if (node.parentId) {
+                const parent = this.nodes.find(n => n.id === node.parentId);
+                if (parent) {
+                    const startX = (parent.x / 100) * w;
+                    const startY = (parent.y / 100) * h;
+                    const endX = (node.x / 100) * w;
+                    const endY = (node.y / 100) * h;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(startX, startY);
+                    this.ctx.bezierCurveTo(startX, (startY + endY) / 2, endX, (startY + endY) / 2, endX, endY);
+                    
+                    const isUnlocked = gameState.skillTreeLevels[node.id] > 0;
+                    this.ctx.strokeStyle = isUnlocked ? '#10b981' : '#334155';
+                    this.ctx.lineWidth = isUnlocked ? 3 : 1.5;
+                    this.ctx.stroke();
+                }
+            }
+        });
+    }
+
+    render() {
+        if (!this.container) return;
+        this.container.innerHTML = '';
+
+        this.nodes.forEach(node => {
+            const el = document.createElement('div');
+            const lvl = gameState.skillTreeLevels[node.id] || 0;
+            const isUnlocked = lvl > 0;
+
+            el.className = `skill-node ${isUnlocked ? 'unlocked' : ''} ${this.selectedId === node.id ? 'selected' : ''}`;
+            el.style.left = `${node.x}%`;
+            el.style.top = `${node.y}%`;
+            el.innerHTML = node.icon;
+
+            if (lvl > 0) {
+                const b = document.createElement('div');
+                b.style.cssText = 'position:absolute; bottom:-2px; right:-2px; background:#10b981; color:#fff; font-size:7px; padding:1px 3px; border-radius:4px; font-weight:bold;';
+                b.innerText = `v${lvl}`;
+                el.appendChild(b);
+            }
+
+            el.onclick = () => this.selectNode(node.id);
+            this.container.appendChild(el);
+        });
+
+        this.drawConnections();
+    }
+
+    selectNode(id) {
+        this.selectedId = id;
+        const node = this.nodes.find(n => n.id === id);
+        if (!node) return;
+
+        const currentLvl = gameState.skillTreeLevels[id] || 0;
+        const cost = node.cost * (currentLvl + 1);
+        // BUGFIX: trước đây có thể mua fusion/hybrid mà không cần mở khóa
+        // parentId (licker/tyrant) trước, dù UI vẽ đường nối ngụ ý phải theo thứ tự.
+        const parentLocked = node.parentId && (gameState.skillTreeLevels[node.parentId] || 0) <= 0;
+
+        document.getElementById('skill-title').innerText = `${node.name} (v${currentLvl})`;
+        const synergyPct = Math.round((getSkillTreeSynergyMult() - 1) * 100);
+        const synergyNote = synergyPct > 0 ? ` (+${synergyPct}% từ Hệ Sức Mạnh)` : '';
+        document.getElementById('skill-desc').innerText = parentLocked
+            ? `${node.desc} | Cần mở khóa [${this.nodes.find(n => n.id === node.parentId).name}] trước.`
+            : `${node.desc}${synergyNote} | Giá: ${cost} Gen`;
+
+        const btn = document.getElementById('btn-upgrade-node');
+        btn.disabled = parentLocked || gameState.resources.gene < cost;
+        btn.onclick = () => {
+            if (!parentLocked && gameState.resources.gene >= cost) {
+                gameState.resources.gene -= cost;
+                gameState.skillTreeLevels[id] = currentLvl + 1;
+                soundEngine.playUpgrade();
+                addCombatLog(`Đã nâng cấp [${node.name}] lên cấp ${gameState.skillTreeLevels[id]}`);
+                updateAppUI();
+                this.selectNode(id);
+                SaveManager.save();
+            }
+        };
+
+        this.render();
+    }
+}
+
+// BUGFIX (kiểm tra sâu 08/2026): "licker" (+15%/cấp tốc độ đánh Boss), "tyrant"
+// (+25%/cấp Máu tối đa) và "fusion" (+200%/cấp DMG tia năng lượng lên Boss) trước
+// đây không có bất kỳ đoạn code nào áp dụng hiệu ứng — tốn Mẫu Gen mà vô dụng.
+// Gom hệ số vào 2 hàm dùng chung cho cả tick tự động lẫn Kỹ Năng Chủ Động.
+// Mục "chiều sâu" mở rộng - HỢP NHẤT Skill Tree + Hệ Sức Mạnh: trước đây 2 nguồn
+// sức mạnh hoàn toàn tách biệt, người chơi dễ bối rối nên đầu tư vào đâu. Nay mỗi
+// cấp Tinh Luyện của Hệ Sức Mạnh đang active cộng thêm +5% hiệu lực cho MỌI node
+// Skill Tree đã mở khóa — khuyến khích đầu tư song song cả 2 thay vì tách rời.
+function getSkillTreeSynergyMult() {
+    const ps = getActivePowerSystem();
+    if (!ps) return 1;
+    return 1 + getPowerSystemLevel(ps.id) * 0.05;
+}
+
+function getSkillTreeAtkSpeedMult() {
+    return 1 + (gameState.skillTreeLevels.licker || 0) * 0.15 * getSkillTreeSynergyMult();
+}
+function getSkillTreeDmgMult() {
+    return 1 + (gameState.skillTreeLevels.fusion || 0) * 2.0 * getSkillTreeSynergyMult();
+}
+
+// ==========================================
+// 6. NOTIFICATION MANAGER
+// ==========================================
+class NotificationManager {
+    async requestPermission() {
+        if (!('Notification' in window)) return;
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+            addCombatLog("Đã bật thông báo PWA chạy ngầm!");
+            document.getElementById('btn-notify').style.display = 'none';
+        }
+    }
+}
+const notifyManager = new NotificationManager();
+
+// ==========================================
+// 7. GAME LOGIC & UI HELPER FUNCTIONS
+// ==========================================
+function calculateSwarmCapacity() {
+    const baseCap = 10;
+    const levelBonus = Math.floor(5 * Math.pow(gameState.zombieLvl, 1.25));
+    let cap = baseCap + levelBonus;
+    const ps = getActivePowerSystem();
+    if (ps && ps.swarmBonus) cap = Math.floor(cap * (1 + ps.swarmBonus * getPowerLevelScale(ps.id)));
+    // Đột Phá Lv.5 Tử Linh (id 1): +1 giới hạn Swarm mỗi 2 cấp Zombie Lvl, cộng dồn riêng.
+    if (ps && ps.id === 1 && isPowerSystemMaxed(1)) cap += Math.floor(gameState.zombieLvl / 2);
+    return cap;
+}
+
+// Mục "cân bằng số liệu" (đã test qua mô phỏng 50 vòng headless): chi phí nâng cấp
+// Zombie Lvl đổi từ tuyến tính (zombieLvl*10) sang tăng theo cấp số nhân, tránh vòng
+// lặp tự khuếch đại (thu nhập Gỗ cũng tăng theo cấp) khiến CP bùng nổ quá nhanh.
+function getZombieUpgradeCost() {
+    return Math.floor(10 * Math.pow(1.15, gameState.zombieLvl - 1));
+}
+
+function calculateTotalCP() {
+    let cp = gameState.zombieLvl * 40 + gameState.hwPoints * 8 + gameState.swPoints * 12;
+    // BUGFIX: mô tả node ghi "Nhân đôi CP lực chiến" nhưng code cũ chỉ +50%/cấp
+    // (phải lên cấp 2 mới thật sự x2). Sửa lại hệ số cho khớp mô tả: 1 cấp = x2.
+    if (gameState.skillTreeLevels.hybrid > 0) cp *= (1 + gameState.skillTreeLevels.hybrid * 1.0 * getSkillTreeSynergyMult());
+    if (gameState.npcsUnlocked[7]) cp *= 1.5;
+
+    const ps = getActivePowerSystem();
+    if (ps && ps.cpMult) cp *= (1 + ps.cpMult * getPowerLevelScale(ps.id));
+
+    const faction = getActiveFaction();
+    if (faction && faction.cpMult) cp *= (1 + faction.cpMult);
+
+    cp *= (1 + getEquipmentCPBonus());
+
+    // Mục 11 - Chuyển Sinh (Rebirth/Prestige): bonus vĩnh viễn cộng dồn qua các vòng.
+    cp *= (1 + gameState.rebirthMult);
+
+    return Math.floor(cp);
+}
+
+function addCombatLog(msg) {
+    const log = document.getElementById('combat-log');
+    if (!log) return;
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = `> ${msg}`;
+    log.appendChild(div);
+    if (log.children.length > 20) log.removeChild(log.firstChild);
+}
+
+// BUGFIX (kiểm tra sâu 08/2026): trước đây dùng biến toàn cục ngầm định `event`
+// (event.target) để biết nút nào vừa được bấm — chỉ tình cờ hoạt động vì hàm luôn
+// được gọi từ onclick="" inline; sẽ ném lỗi "event is not defined" nếu switchTab()
+// được gọi từ nơi khác (vd từ code, phím tắt...). Nay tìm đúng nút theo tabId,
+// không phụ thuộc vào nguồn gọi.
+function switchTab(tabId) {
+    soundEngine.playClick();
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    const btn = document.querySelector(`.tab-btn[onclick*="'${tabId}'"]`);
+    if (btn) btn.classList.add('active');
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+
+    if (tabId === 'evo' && skillTreeEngine) {
+        setTimeout(() => skillTreeEngine.resize(), 100);
+    }
+}
+
+function updateAppUI() {
+    for (const key in gameState.resources) {
+        const el = document.getElementById(`res-${key}`);
+        if (el) el.innerText = Math.floor(gameState.resources[key]);
+    }
+
+    const ps = getActivePowerSystem();
+    const psHpMult = ps ? ps.hpMult * getPowerLevelScale(ps.id) : 0;
+    gameState.maxPlayerHp = Math.floor(100 * (1 + psHpMult) * (1 + (gameState.skillTreeLevels.tyrant || 0) * 0.25 * getSkillTreeSynergyMult()));
+    if (gameState.playerHp > gameState.maxPlayerHp) gameState.playerHp = gameState.maxPlayerHp;
+    const hpBar = document.getElementById('player-hp-inner');
+    if (hpBar) hpBar.style.width = `${(gameState.playerHp / gameState.maxPlayerHp) * 100}%`;
+
+    document.getElementById('hud-chapter').innerText = `CHAPTER ${gameState.chapter}`;
+    const story = getChapterStory(gameState.chapter);
+    const storyTitleEl = document.getElementById('txt-story-title');
+    const storyTextEl = document.getElementById('txt-story-text');
+    if (storyTitleEl) storyTitleEl.innerText = story.title;
+    if (storyTextEl) storyTextEl.innerText = story.text;
+    document.getElementById('hud-cp').innerText = `CP: ${calculateTotalCP()}`;
+    document.getElementById('txt-swarm-count').innerText = `${calculateSwarmCapacity()} đơn vị`;
+    document.getElementById('txt-zombie-cost').innerText = getZombieUpgradeCost();
+    document.getElementById('txt-hw').innerText = gameState.hwPoints;
+    document.getElementById('txt-sw').innerText = gameState.swPoints;
+
+    const synergyEl = document.getElementById('txt-skilltree-synergy');
+    if (synergyEl) {
+        const activePs = getActivePowerSystem();
+        if (activePs) {
+            const bonusPct = Math.round((getSkillTreeSynergyMult() - 1) * 100);
+            synergyEl.innerHTML = `Hệ đang active: <span style="color:var(--accent-blue); font-weight:bold;">${activePs.name}</span> (Lv.${getPowerSystemLevel(activePs.id)}) → <span style="color:var(--accent-yellow, #fbbf24); font-weight:bold;">+${bonusPct}%</span> hiệu lực mọi Node Skill Tree.`;
+        } else {
+            synergyEl.innerText = 'Chưa kích hoạt Hệ Sức Mạnh nào — kích hoạt 1 hệ ở tab SỨC MẠNH để nhận cộng hưởng.';
+        }
+    }
+
+    renderNPCList();
+    renderWorldList();
+    renderBuildingList();
+    renderPowerList();
+    renderFactionList();
+    renderGearList();
+    renderBattleTab();
+    renderShopTab();
+    renderQuestList();
+    renderRebirthCard();
+    renderRebirthHistory();
+    renderAchievementList();
+    renderMechChainUI();
+}
+
+// Toggle "Tự động nhận thưởng": khi bật, mỗi giây tự quét Nhiệm Vụ Chapter hiện tại
+// + toàn bộ Thành Tựu, tự bấm nhận hộ nếu đã đủ điều kiện — hợp lối chơi AFK.
+function toggleAutoClaim(checked) {
+    gameState.autoClaim = checked;
+    addCombatLog(checked ? "[Tự động] Đã bật Tự động nhận thưởng." : "[Tự động] Đã tắt Tự động nhận thưởng.");
+    SaveManager.save();
+}
+
+function autoClaimTick() {
+    if (!gameState.autoClaim) return;
+
+    const quests = getQuestsForChapter(gameState.chapter);
+    if (quests) {
+        quests.forEach((q, idx) => {
+            const key = `${gameState.chapter}-${idx}`;
+            if (!gameState.questsClaimed.includes(key) && getQuestProgress(q.type) >= q.target) {
+                claimQuest(gameState.chapter, idx);
+            }
+        });
+    }
+
+    ACHIEVEMENTS.forEach(a => {
+        if (!gameState.achievementsClaimed.includes(a.id) && a.cond()) {
+            claimAchievement(a.id);
+        }
+    });
+}
+
+// Mục 4 - World Map: danh sách zone + trạng thái khóa/mở theo Chapter hiện tại.
+function renderWorldList() {
+    const container = document.getElementById('world-list');
+    if (!container) return;
+
+    container.innerHTML = WORLD_ZONES.map(zone => {
+        const unlocked = gameState.chapter >= zone.unlockChapter;
+        const active = gameState.currentWorld === zone.id;
+        return `
+        <div class="zone-item ${active ? 'active-zone' : ''}">
+            <div>
+                <div class="zone-name">${zone.name} ${active ? '⭐' : ''}</div>
+                <div class="zone-desc">${zone.desc} — Bonus: +${Math.round(zone.bonusPct * 100)}% ${zone.bonusRes}</div>
+                ${unlocked ? '' : `<div class="zone-desc" style="color:var(--accent-red);">Mở khóa ở Chapter ${zone.unlockChapter}</div>`}
+            </div>
+            <button class="btn-action" style="width:auto; padding:4px 8px;"
+                ${unlocked ? '' : 'disabled'}
+                onclick="switchWorld(${zone.id})">
+                ${active ? 'ĐANG Ở' : (unlocked ? 'DI CHUYỂN' : 'KHÓA')}
+            </button>
+        </div>`;
+    }).join('');
+}
+
+function switchWorld(zoneId) {
+    const zone = WORLD_ZONES[zoneId];
+    if (!zone || gameState.chapter < zone.unlockChapter) return;
+    gameState.currentWorld = zoneId;
+    if (renderEngine) renderEngine.setWorldZone(zoneId);
+    soundEngine.playClick();
+    addCombatLog(`Đã di chuyển tới [${zone.name}]`);
+    renderWorldList();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Mục 4.2 - Bán Giới: danh sách công trình có thể nâng cấp.
+function renderBuildingList() {
+    const container = document.getElementById('building-list');
+    if (!container) return;
+
+    container.innerHTML = Object.keys(BUILDING_DEFS).map(key => {
+        const def = BUILDING_DEFS[key];
+        const lvl = gameState.buildings[key] || 0;
+        const cost = getBuildingCost(key);
+        const resLabel = { wood: "Gỗ", stone: "Đá", ruins: "Phế Tích" }[def.costRes];
+        return `
+        <div class="building-item">
+            <div>
+                <div class="zone-name">${def.name} — Cấp ${lvl}</div>
+                <div class="zone-desc">${def.desc}</div>
+            </div>
+            <button class="btn-action" style="width:auto; padding:4px 8px;" onclick="upgradeBuilding('${key}')">
+                NÂNG (${cost} ${resLabel})
+            </button>
+        </div>`;
+    }).join('');
+}
+
+function upgradeBuilding(key) {
+    const def = BUILDING_DEFS[key];
+    const cost = getBuildingCost(key);
+    if (gameState.resources[def.costRes] >= cost) {
+        gameState.resources[def.costRes] -= cost;
+        gameState.buildings[key] = (gameState.buildings[key] || 0) + 1;
+        soundEngine.playUpgrade();
+        addCombatLog(`Nâng cấp [${def.name}] lên Cấp ${gameState.buildings[key]}`);
+        renderBuildingList();
+        updateAppUI();
+        SaveManager.save();
+    }
+}
+
+function toggleAutoBattle(enabled) {
+    gameState.autoBattle = enabled;
+    addCombatLog(enabled ? "Đã bật Auto-battle." : "Đã tắt Auto-battle.");
+    SaveManager.save();
+}
+
+// Mục 5.1 - Danh sách 7 Hệ Sức Mạnh: khóa/mở bằng Mẫu Gen, 1 hệ active tại 1 thời điểm.
+function renderPowerList() {
+    const container = document.getElementById('power-list');
+    if (!container) return;
+
+    container.innerHTML = POWER_SYSTEMS.map(ps => {
+        const unlocked = gameState.powerSystemsUnlocked[ps.id];
+        const active = gameState.activePowerSystem === ps.id;
+        const lvl = getPowerSystemLevel(ps.id);
+        const maxed = isPowerSystemMaxed(ps.id);
+        let btnLabel, btnAction, btnDisabled = '';
+        if (!unlocked) {
+            btnLabel = `MỞ (${ps.cost} Gen)`;
+            btnAction = `unlockPowerSystem(${ps.id})`;
+        } else if (active) {
+            btnLabel = 'ĐANG DÙNG';
+            btnAction = '';
+            btnDisabled = 'disabled';
+        } else {
+            btnLabel = 'KÍCH HOẠT';
+            btnAction = `setActivePowerSystem(${ps.id})`;
+        }
+
+        // Chiều sâu: khối Tinh Luyện — chỉ hiện khi hệ đã mở khóa.
+        let levelBlock = '';
+        if (unlocked) {
+            const upCost = getPowerSystemUpgradeCost(ps.id);
+            const canAfford = gameState.resources.gene >= upCost;
+            const lvlColor = maxed ? 'var(--accent-yellow, #fbbf24)' : 'var(--accent-blue)';
+            levelBlock = `
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.1);">
+                <div style="font-size: 8px;">
+                    <span style="color:${lvlColor}; font-weight:bold;">TINH LUYỆN Lv.${lvl}/${POWER_MAX_LEVEL}</span>
+                    ${maxed ? `<div style="color: var(--accent-yellow, #fbbf24); margin-top:2px;">★ ${POWER_BREAKTHROUGHS[ps.id]}</div>` : `<div style="color: var(--text-muted); margin-top:2px;">Mỗi cấp: toàn bộ hệ số +${Math.round(POWER_LEVEL_STEP*100)}%</div>`}
+                </div>
+                <button class="btn-action" style="width:auto; padding:4px 8px; background:${maxed ? '#4b5563' : '#7c3aed'}; flex-shrink:0;" ${maxed || !canAfford ? 'disabled' : ''} onclick="upgradePowerSystem(${ps.id})">
+                    ${maxed ? 'TỐI ĐA' : `TINH LUYỆN (${upCost})`}
+                </button>
+            </div>`;
+        }
+
+        return `
+        <div class="zone-item ${active ? 'active-zone' : ''}" style="flex-direction:column; align-items:stretch;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div class="zone-name">${ps.name} <span style="color:var(--accent-purple);">[${ps.role}]</span></div>
+                    <div class="zone-desc">${ps.desc}</div>
+                </div>
+                <button class="btn-action" style="width:auto; padding:4px 8px; flex-shrink:0;" ${btnDisabled} onclick="${btnAction}">${btnLabel}</button>
+            </div>
+            ${levelBlock}
+        </div>`;
+    }).join('');
+
+    // Mục 5 - hiển thị Kỹ Năng Chủ Động của hệ đang active
+    const skillBox = document.getElementById('active-skill-box');
+    const activePs = getActivePowerSystem();
+    if (skillBox) {
+        if (!activePs) {
+            skillBox.style.display = 'none';
+        } else {
+            skillBox.style.display = 'flex';
+            const skill = POWER_ACTIVE_SKILLS.find(s => s.id === activePs.id);
+            document.getElementById('txt-skill-name').innerText = skill.name;
+            document.getElementById('txt-skill-desc').innerText = skill.desc;
+            const btn = document.getElementById('btn-use-skill');
+            const lastUsed = gameState.skillLastUsedTs[skill.id] || 0;
+            const cdLeft = Math.ceil((lastUsed + skill.cooldown * 1000 - Date.now()) / 1000);
+            if (cdLeft > 0) {
+                btn.disabled = true;
+                btn.innerText = `HỒI CHIÊU (${cdLeft}s)`;
+            } else {
+                btn.disabled = false;
+                btn.innerText = 'SỬ DỤNG';
+            }
+        }
+    }
+}
+
+function unlockPowerSystem(id) {
+    const ps = POWER_SYSTEMS.find(p => p.id === id);
+    if (ps && !gameState.powerSystemsUnlocked[id] && gameState.resources.gene >= ps.cost) {
+        gameState.resources.gene -= ps.cost;
+        gameState.powerSystemsUnlocked[id] = true;
+        soundEngine.playUpgrade();
+        addCombatLog(`Đã mở khóa Hệ Sức Mạnh [${ps.name}]!`);
+        renderPowerList();
+        updateAppUI();
+        SaveManager.save();
+    }
+}
+
+function setActivePowerSystem(id) {
+    if (!gameState.powerSystemsUnlocked[id]) return;
+    gameState.activePowerSystem = id;
+    const ps = POWER_SYSTEMS.find(p => p.id === id);
+    soundEngine.playClick();
+    addCombatLog(`Đã kích hoạt build [${ps.name}] làm hệ chính.`);
+    if (renderEngine) renderEngine.updatePlayerAppearance();
+    renderPowerList();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Mục 5.2 - Phe phái: chọn miễn phí, đổi bất cứ lúc nào (chưa có PvP thật để "khóa" lựa chọn).
+function renderFactionList() {
+    const container = document.getElementById('faction-list');
+    if (!container) return;
+
+    container.innerHTML = FACTIONS.map(f => {
+        const active = gameState.faction === f.id;
+        return `
+        <div class="zone-item ${active ? 'active-zone' : ''}">
+            <div>
+                <div class="zone-name">${f.name}</div>
+                <div class="zone-desc">${f.desc}</div>
+            </div>
+            <button class="btn-action" style="width:auto; padding:4px 8px;" ${active ? 'disabled' : ''} onclick="joinFaction(${f.id})">
+                ${active ? 'ĐANG THUỘC PHE' : 'GIA NHẬP'}
+            </button>
+        </div>`;
+    }).join('');
+}
+
+function joinFaction(id) {
+    gameState.faction = id;
+    const f = FACTIONS.find(x => x.id === id);
+    soundEngine.playClick();
+    addCombatLog(`Đã gia nhập phe [${f.name}]!`);
+    renderFactionList();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Mục 6 - Danh sách chế tạo trang bị theo hệ, hiển thị độ hiếm hiện tại + nút chế tạo.
+function renderGearList() {
+    const container = document.getElementById('gear-list');
+    if (!container) return;
+
+    container.innerHTML = EQUIPMENT_TYPES.map(type => {
+        const rarityId = gameState.equipment[type.id];
+        const tier = (rarityId !== undefined && rarityId !== null) ? RARITY_TIERS[rarityId] : null;
+        const resLabel = { scrap: "Phế Liệu", gene: "Mẫu Gen", comp: "Linh Kiện", data: "Lõi Data" }[type.costRes];
+        return `
+        <div class="building-item">
+            <div>
+                <div class="zone-name">${type.name} <span style="color:var(--text-muted); font-weight:normal;">[${type.he}]</span></div>
+                <div class="zone-desc">${tier ? `<span style="color:${tier.color}; font-weight:bold;">${tier.name}</span> (+${Math.round(tier.statMult*100)}% CP)` : 'Chưa chế tạo'}</div>
+            </div>
+            <button class="btn-action" style="width:auto; padding:4px 8px; background:#0284c7;" onclick="craftEquipment('${type.id}')">
+                CHẾ TẠO (${type.cost} ${resLabel})
+            </button>
+        </div>`;
+    }).join('');
+}
+
+function craftEquipment(typeId) {
+    const type = EQUIPMENT_TYPES.find(t => t.id === typeId);
+    if (!type || gameState.resources[type.costRes] < type.cost) return;
+
+    gameState.resources[type.costRes] -= type.cost;
+    const rolledId = rollRarity();
+    const rolledTier = RARITY_TIERS[rolledId];
+    const currentId = gameState.equipment[typeId];
+
+    if (currentId === undefined || currentId === null || rolledId > currentId) {
+        gameState.equipment[typeId] = rolledId;
+        gameState.stats.gearCrafted++;
+        soundEngine.playUpgrade();
+        addCombatLog(`Chế tạo [${type.name}] ra độ hiếm [${rolledTier.name}] — đã trang bị!`);
+    } else {
+        soundEngine.playClick();
+        addCombatLog(`Chế tạo [${type.name}] ra độ hiếm [${rolledTier.name}] — không cao hơn đồ hiện có, giữ nguyên.`);
+    }
+
+    renderGearList();
+    if (renderEngine) renderEngine.updatePlayerAppearance();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// ==========================================
+// MỤC 7.x - PVE DUNGEON / PVP ARENA / WORLD BOSS / FARMING TICKET
+// ==========================================
+// Mục 7.2 - ĐẤU TRƯỜNG MA (Chiều sâu solo): đổi khung "PvP" thành đối đầu bóng ma
+// của chính người chơi ở các vòng Chuyển Sinh trước (nếu đã có lịch sử), hoặc
+// kình địch cốt truyện (Ma Phổ, Tây Khu...) nếu chưa từng Chuyển Sinh — không
+// còn ngụ ý "đối thủ ngẫu nhiên vô danh" như bản PvP giả lập cũ.
+const PVP_RIVAL_NAMES = ["Sát Thủ Server 8", "Kỵ Sĩ Tây Khu", "Pháp Sư Ma Phổ", "Cận Vệ Thánh Điện", "Du Hành Giả Tinh Không"];
+function getPvpRankName(points) {
+    let name = PVP_RANKS[0].name;
+    for (const r of PVP_RANKS) if (points >= r.min) name = r.name;
+    return name;
+}
+
+function renderBattleTab() {
+    regenTickets();
+    resetWorldBossIfNeeded();
+
+    const ticketEl = document.getElementById('txt-ticket-count');
+    if (ticketEl) ticketEl.innerText = `${gameState.tickets} / ${TICKET_CAP}`;
+
+    // Phó bản
+    const dungeonContainer = document.getElementById('dungeon-list');
+    if (dungeonContainer) {
+        const myCpForDungeon = calculateTotalCP();
+        dungeonContainer.innerHTML = DUNGEON_TIERS.map(d => {
+            const unlocked = gameState.chapter >= d.unlockChapter;
+            const canRun = unlocked && gameState.tickets > 0;
+            const projFloors = unlocked ? Math.max(1, Math.min(d.floors, 1 + Math.floor(myCpForDungeon / d.floorPower))) : 0;
+            return `
+            <div class="zone-item ${!unlocked ? '' : ''}">
+                <div>
+                    <div class="zone-name">${d.name} <span style="color:var(--text-muted); font-weight:normal;">(${d.floors} Tầng)</span></div>
+                    <div class="zone-desc">${unlocked ? `Thưởng: ${d.rewardRes.map(r => RESOURCE_LABELS[r]).join(', ')} — tốn 1 Vé — dự kiến xuyên ${projFloors}/${d.floors} tầng — rớt Trang Bị ${Math.round(d.gearDropChance*100)}% (cần full clear)` : `Mở khóa ở Chapter ${d.unlockChapter}`}</div>
+                </div>
+                <button class="btn-action" style="width:auto; padding:4px 8px;" ${canRun ? '' : 'disabled'} onclick="runDungeon(${d.id})">${unlocked ? 'VÀO' : 'KHÓA'}</button>
+            </div>`;
+        }).join('');
+    }
+
+    // PvP
+    const rankEl = document.getElementById('txt-pvp-rank');
+    if (rankEl) rankEl.innerText = getPvpRankName(gameState.pvpPoints);
+    const statsEl = document.getElementById('txt-pvp-stats');
+    if (statsEl) statsEl.innerText = `${gameState.pvpPoints} Điểm — ${gameState.pvpWins}T/${gameState.pvpLosses}B`;
+    const fightBtn = document.getElementById('btn-pvp-fight');
+    if (fightBtn) {
+        const cdLeft = Math.ceil((gameState.pvpLastTs + PVP_COOLDOWN_SEC * 1000 - Date.now()) / 1000);
+        if (cdLeft > 0) {
+            fightBtn.disabled = true;
+            fightBtn.innerText = `HỒI CHIÊU (${cdLeft}s)`;
+        } else {
+            fightBtn.disabled = false;
+            fightBtn.innerText = 'KHIÊU CHIẾN ĐỐI THỦ';
+        }
+    }
+
+    // World Boss
+    const wb = gameState.worldBoss;
+    const wbAttemptsEl = document.getElementById('txt-wb-attempts');
+    if (wbAttemptsEl) wbAttemptsEl.innerText = wb.attemptsLeft;
+    const wbHpBar = document.getElementById('wb-hp-inner');
+    if (wbHpBar) wbHpBar.style.width = `${wb.maxHp > 0 ? (wb.hp / wb.maxHp) * 100 : 0}%`;
+    const wbHpText = document.getElementById('txt-wb-hp');
+    if (wbHpText) wbHpText.innerText = `${Math.floor(wb.hp)} / ${wb.maxHp} HP`;
+    const wbBtn = document.getElementById('btn-wb-attack');
+    if (wbBtn) wbBtn.disabled = wb.attemptsLeft <= 0;
+    // Chiều sâu: hiển thị hệ khắc chế của vòng hiện tại + có đang khớp build hay không.
+    const wbWeaknessEl = document.getElementById('txt-wb-weakness');
+    if (wbWeaknessEl) {
+        const weak = getWorldBossWeakness();
+        const matched = gameState.activePowerSystem === weak.id;
+        wbWeaknessEl.innerHTML = matched
+            ? `<span style="color: var(--accent-yellow, #fbbf24); font-weight:bold;">KHẮC CHẾ: ${weak.name} — build của bạn đang khớp! (+${Math.round(WORLDBOSS_WEAKNESS_BONUS*100)}% dmg)</span>`
+            : `<span style="color: var(--text-muted);">KHẮC CHẾ: <span style="color:var(--accent-blue);">${weak.name}</span> — kích hoạt hệ này để +${Math.round(WORLDBOSS_WEAKNESS_BONUS*100)}% sát thương</span>`;
+    }
+}
+
+// Mục 7.1 - Phó bản cày tài nguyên (Chiều sâu): tốn 1 Vé, xuyên qua nhiều Tầng
+// theo CP hiện tại (không còn full-clear miễn phí), thưởng scale theo % tầng
+// xuyên phá được; xuyên trọn tất cả tầng có cơ hội rớt Trang Bị.
+function runDungeon(tierId) {
+    const tier = DUNGEON_TIERS.find(d => d.id === tierId);
+    if (!tier || gameState.chapter < tier.unlockChapter || gameState.tickets <= 0) return;
+
+    gameState.tickets -= 1;
+    gameState.stats.dungeonRuns++;
+    const cp = calculateTotalCP();
+    const floorsCleared = Math.max(1, Math.min(tier.floors, 1 + Math.floor(cp / tier.floorPower)));
+    const fullClear = floorsCleared >= tier.floors;
+    const clearFrac = floorsCleared / tier.floors;
+
+    const rewards = tier.rewardRes.map(r => {
+        const amount = Math.floor((cp / 25) * tier.mult * clearFrac * (0.8 + Math.random() * 0.4)) + 1;
+        gameState.resources[r] += amount;
+        return `+${amount} ${RESOURCE_LABELS[r]}`;
+    });
+
+    let logMsg = `[Phó Bản] ${tier.name}: xuyên phá ${floorsCleared}/${tier.floors} Tầng — ${rewards.join(', ')}`;
+
+    if (fullClear && Math.random() < tier.gearDropChance) {
+        const type = EQUIPMENT_TYPES[Math.floor(Math.random() * EQUIPMENT_TYPES.length)];
+        const rolledId = rollRarity();
+        const currentId = gameState.equipment[type.id];
+        if (currentId === undefined || currentId === null || rolledId > currentId) {
+            gameState.equipment[type.id] = rolledId;
+            logMsg += ` | Rớt [${type.name}] ${RARITY_TIERS[rolledId].name}!`;
+        } else {
+            logMsg += ` | Rớt [${type.name}] ${RARITY_TIERS[rolledId].name} (không cao hơn đồ hiện có).`;
+        }
+    } else if (!fullClear) {
+        logMsg += ` (nâng CP để xuyên trọn ${tier.floors} tầng và mở khóa cơ hội rớt Trang Bị)`;
+    }
+
+    soundEngine.playUpgrade();
+    addCombatLog(logMsg);
+    renderBattleTab();
+    renderGearList();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Mục 7.2 - Đấu Trường Ma: đối thủ là bóng ma quá khứ (ưu tiên nếu có lịch sử
+// Chuyển Sinh) hoặc kình địch cốt truyện; thắng/thua tính theo tỉ lệ CP, có hồi
+// chiêu để tránh spam.
+function runPvpBattle() {
+    if (Date.now() < gameState.pvpLastTs + PVP_COOLDOWN_SEC * 1000) return;
+    gameState.pvpLastTs = Date.now();
+
+    const myCP = calculateTotalCP();
+    let oppName, oppCP;
+    if (gameState.rebirthHistory && gameState.rebirthHistory.length > 0 && Math.random() < 0.5) {
+        const past = gameState.rebirthHistory[Math.floor(Math.random() * gameState.rebirthHistory.length)];
+        oppName = `Bóng Ma Bản Thân (Vòng Chuyển Sinh ${past.round})`;
+        oppCP = Math.floor(past.cp * (0.9 + Math.random() * 0.3));
+    } else {
+        oppName = PVP_RIVAL_NAMES[Math.floor(Math.random() * PVP_RIVAL_NAMES.length)];
+        oppCP = Math.floor(myCP * (0.8 + Math.random() * 0.4));
+    }
+    const winChance = myCP / (myCP + oppCP);
+    const won = Math.random() < winChance;
+
+    if (won) {
+        gameState.pvpWins++;
+        gameState.pvpPoints += 15;
+        const geneGain = Math.floor(5 + gameState.chapter * 2);
+        gameState.resources.gene += geneGain;
+        soundEngine.playUpgrade();
+        addCombatLog(`[Đấu Trường Ma] Thắng ${oppName} (CP ${oppCP})! +15 Điểm, +${geneGain} Mẫu Gen`);
+    } else {
+        gameState.pvpLosses++;
+        gameState.pvpPoints = Math.max(0, gameState.pvpPoints - 8);
+        soundEngine.playClick();
+        addCombatLog(`[Đấu Trường Ma] Thua trước ${oppName} (CP ${oppCP}). -8 Điểm`);
+    }
+
+    renderBattleTab();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Mục 7.3 - World Boss (Tà Thần Cổ Đại): mỗi lượt gây sát thương theo CP, giới hạn
+// số lượt/ngày; hạ gục xong nhận thưởng lớn rồi boss hồi sinh mạnh hơn cho vòng sau.
+function attackWorldBoss() {
+    resetWorldBossIfNeeded();
+    const wb = gameState.worldBoss;
+    if (wb.attemptsLeft <= 0) return;
+
+    wb.attemptsLeft--;
+    const cp = calculateTotalCP();
+    const weak = getWorldBossWeakness();
+    const isWeakMatch = gameState.activePowerSystem === weak.id;
+    let dmg = Math.floor(cp * (2.5 + Math.random() * 1.5));
+    if (isWeakMatch) dmg = Math.floor(dmg * (1 + WORLDBOSS_WEAKNESS_BONUS));
+
+    const prevFrac = wb.maxHp > 0 ? wb.hp / wb.maxHp : 0;
+    wb.hp = Math.max(0, wb.hp - dmg);
+    const newFrac = wb.maxHp > 0 ? wb.hp / wb.maxHp : 0;
+
+    soundEngine.playHit();
+    addCombatLog(`[Tà Thần Cổ Đại] Gây ${dmg} sát thương${isWeakMatch ? ' (KHẮC CHẾ x' + (1+WORLDBOSS_WEAKNESS_BONUS).toFixed(1) + '!)' : ''}! (${Math.floor(wb.hp)}/${wb.maxHp} HP còn lại)`);
+
+    // Chiều sâu: mốc Giai Đoạn ở 66%/33% HP — chỉ flavor log, báo hiệu càng đánh càng khó.
+    if (wb.hp > 0) {
+        if (prevFrac > 0.66 && newFrac <= 0.66) addCombatLog(`[Tà Thần Cổ Đại] Bước vào GIAI ĐOẠN 2 — cuồng nộ trỗi dậy!`);
+        else if (prevFrac > 0.33 && newFrac <= 0.33) addCombatLog(`[Tà Thần Cổ Đại] Bước vào GIAI ĐOẠN 3 — sức mạnh hỗn loạn bùng nổ!`);
+    }
+
+    if (wb.hp <= 0) {
+        gameState.stats.worldBossKills++;
+        const geneReward = Math.floor(50 + gameState.chapter * 20);
+        const dataReward = Math.floor(30 + gameState.chapter * 15);
+        gameState.resources.gene += geneReward;
+        gameState.resources.data += dataReward;
+        let killMsg = `[Tà Thần Cổ Đại] ĐÃ BỊ ĐÁNH BẠI! +${geneReward} Mẫu Gen, +${dataReward} Lõi Data.`;
+
+        // Chiều sâu: World Boss luôn rớt Trang Bị, thiên vị phẩm cao hơn Phó Bản thường.
+        const type = EQUIPMENT_TYPES[Math.floor(Math.random() * EQUIPMENT_TYPES.length)];
+        const rolledId = Math.min(RARITY_TIERS.length - 1, rollRarity() + 1);
+        const currentId = gameState.equipment[type.id];
+        if (currentId === undefined || currentId === null || rolledId > currentId) {
+            gameState.equipment[type.id] = rolledId;
+            killMsg += ` Rớt [${type.name}] ${RARITY_TIERS[rolledId].name}!`;
+        }
+        killMsg += ` Boss hồi sinh mạnh hơn, đổi hệ khắc chế.`;
+        addCombatLog(killMsg);
+        // Cộng dồn tuyến tính theo tổng lượt đã hạ (xem ghi chú ở WORLDBOSS_HP_LINEAR_STEP)
+        wb.maxHp = WORLDBOSS_BASE_HP + gameState.stats.worldBossKills * WORLDBOSS_HP_LINEAR_STEP;
+        wb.hp = wb.maxHp;
+    }
+
+    renderBattleTab();
+    renderGearList();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// ==========================================
+// MỤC 5 - KỸ NĂNG CHỦ ĐỘNG THEO HỆ SỨC MẠNH
+// ==========================================
+function useActiveSkill() {
+    const ps = getActivePowerSystem();
+    if (!ps) return;
+    const skill = POWER_ACTIVE_SKILLS.find(s => s.id === ps.id);
+    if (!skill) return;
+
+    const lastUsed = gameState.skillLastUsedTs[skill.id] || 0;
+    if (Date.now() < lastUsed + skill.cooldown * 1000) return;
+    gameState.skillLastUsedTs[skill.id] = Date.now();
+
+    const cp = calculateTotalCP();
+    if (skill.kind === 'heal' || skill.kind === 'heal_bossburst') {
+        const overheal = Math.max(0, (gameState.playerHp + gameState.maxPlayerHp * skill.healPct) - gameState.maxPlayerHp);
+        gameState.playerHp = Math.min(gameState.maxPlayerHp, gameState.playerHp + gameState.maxPlayerHp * skill.healPct);
+        addCombatLog(`[Kỹ Năng] ${skill.name}: hồi ${Math.floor(skill.healPct * 100)}% HP.`);
+        // Đột Phá Lv.5 Huyết Tộc (id 0): overheal biến thành khiên tạm thời (flavor log).
+        if (ps.id === 0 && isPowerSystemMaxed(0) && overheal > 0) {
+            addCombatLog(`[Đột Phá] Máu dư ${Math.floor(overheal)} chuyển thành khiên tạm thời!`);
+        }
+        if (ps.id === 2 && isPowerSystemMaxed(2)) {
+            addCombatLog(`[Đột Phá] Miễn nhiễm hiệu ứng xấu trong 10s!`);
+        }
+    }
+    if ((skill.kind === 'bossburst' || skill.kind === 'bossburst_bonus' || skill.kind === 'heal_bossburst') && renderEngine && renderEngine.bossActive) {
+        let dmgMult = skill.dmgMult;
+        // Đột Phá Lv.5 Huyết Tộc (id 0): boss burst của Hút Máu Cuồng Bạo cũng scale theo cấp.
+        if (ps.id === 0) dmgMult *= getPowerLevelScale(0);
+        let isCrit = false;
+        // Đột Phá Lv.5 Phượng Hoàng (id 5): 25% cơ hội Chí Mạng x2.
+        if (ps.id === 5 && isPowerSystemMaxed(5) && Math.random() < 0.25) { dmgMult *= 2; isCrit = true; }
+        const dmg = cp * dmgMult;
+        renderEngine.applyBossDamage(dmg);
+        addCombatLog(`[Kỹ Năng] ${skill.name}: gây ${Math.floor(dmg)} sát thương lên Boss!${isCrit ? ' CHÍ MẠNG!' : ''}`);
+        if (ps.id === 3 && isPowerSystemMaxed(3)) {
+            addCombatLog(`[Đột Phá] Boss dính DoT 5%/giây trong 6 giây!`);
+        }
+        // Đột Phá Lv.5 Cơ Giới (id 6): luôn rớt Lõi Data thay vì 20%.
+        const dataDropChance = (ps.id === 6 && isPowerSystemMaxed(6)) ? 1.0 : 0.2;
+        if (skill.kind === 'bossburst_bonus' && Math.random() < dataDropChance) {
+            gameState.resources.data += 10;
+            addCombatLog(`[Kỹ Năng] Cơ hội kích hoạt! +10 Lõi Data.`);
+        }
+    }
+    if (skill.kind === 'resourceburst') {
+        const rates = getResourceRates();
+        const gained = {
+            wood: Math.floor(rates.wood * skill.seconds),
+            stone: Math.floor(rates.stone * skill.seconds),
+            ore: Math.floor(rates.ore * skill.seconds),
+            ruins: Math.floor(rates.ruins * skill.seconds),
+            gene: Math.floor(rates.gene * skill.seconds),
+            scrap: Math.floor(rates.scrap * skill.seconds),
+            data: Math.floor(rates.data * skill.seconds)
+        };
+        for (const k in gained) gameState.resources[k] += gained[k];
+        addCombatLog(`[Kỹ Năng] ${skill.name}: +${gained.wood} Gỗ, +${gained.stone} Đá, +${gained.ore} Quặng, +${gained.ruins} Phế Tích, +${gained.data} Lõi Data.`);
+    }
+
+    soundEngine.playUpgrade();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// ==========================================
+// MỤC 10 - MONETIZATION (DEMO/MOCK — KHÔNG XỬ LÝ THANH TOÁN THẬT)
+// ==========================================
+// Gacha trang bị/skin: quay bằng Tinh Thạch (gems), không ảnh hưởng PvE cày chay
+// vì độ hiếm vẫn roll theo cùng trọng số RARITY_TIERS như chế tạo thường.
+const GACHA_COST = 30;
+function gachaRoll() {
+    if (gameState.gems < GACHA_COST) { addCombatLog("[Thương Hội] Không đủ Tinh Thạch."); return; }
+    gameState.gems -= GACHA_COST;
+
+    const type = EQUIPMENT_TYPES[Math.floor(Math.random() * EQUIPMENT_TYPES.length)];
+    const rolledId = rollRarity();
+    const rolledTier = RARITY_TIERS[rolledId];
+    const currentId = gameState.equipment[type.id];
+
+    if (currentId === undefined || currentId === null || rolledId > currentId) {
+        gameState.equipment[type.id] = rolledId;
+        gameState.stats.gearCrafted++;
+        soundEngine.playUpgrade();
+        addCombatLog(`[Gacha] Ra [${type.name}] độ hiếm [${rolledTier.name}] — đã trang bị!`);
+    } else {
+        soundEngine.playClick();
+        addCombatLog(`[Gacha] Ra [${type.name}] độ hiếm [${rolledTier.name}] — không cao hơn đồ hiện có.`);
+    }
+    renderGearList();
+    renderShopTab();
+    if (renderEngine) renderEngine.updatePlayerAppearance();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Battle Pass theo Chapter (mục 10.1) — thưởng miễn phí khi hoàn thành mỗi Chapter.
+const BATTLEPASS_TIERS = [
+    { chapter: 1, label: "20 Mẫu Gen", reward: { gene: 20 } },
+    { chapter: 2, label: "20 Tinh Thạch", reward: { gems: 20 } },
+    { chapter: 3, label: "30 Lõi Data", reward: { data: 30 } },
+    { chapter: 4, label: "30 Tinh Thạch", reward: { gems: 30 } },
+    { chapter: 5, label: "60 Mẫu Gen", reward: { gene: 60 } },
+    { chapter: 6, label: "50 Tinh Thạch", reward: { gems: 50 } }
+];
+function claimBattlePass(tierChapter) {
+    if (gameState.chapter <= tierChapter || gameState.battlePassClaimed.includes(tierChapter)) return;
+    const tier = BATTLEPASS_TIERS.find(t => t.chapter === tierChapter);
+    if (!tier) return;
+    for (const key in tier.reward) {
+        if (key === 'gems') gameState.gems += tier.reward.gems;
+        else gameState.resources[key] += tier.reward[key];
+    }
+    gameState.battlePassClaimed.push(tierChapter);
+    soundEngine.playUpgrade();
+    addCombatLog(`[Battle Pass] Nhận thưởng Chapter ${tierChapter}: ${tier.label}`);
+    renderShopTab();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Tăng tốc Treo Máy (Speed-up Utility, mục 10.1) — x2 tốc độ 30 phút, chỉ tiện lợi.
+const SPEEDBOOST_COST = 20;
+const SPEEDBOOST_DURATION_SEC = 1800;
+function buySpeedBoost() {
+    if (gameState.gems < SPEEDBOOST_COST) { addCombatLog("[Thương Hội] Không đủ Tinh Thạch."); return; }
+    gameState.gems -= SPEEDBOOST_COST;
+    const base = Math.max(Date.now(), gameState.speedBoostUntil);
+    gameState.speedBoostUntil = base + SPEEDBOOST_DURATION_SEC * 1000;
+    soundEngine.playUpgrade();
+    addCombatLog(`[Thương Hội] Đã kích hoạt Tăng Tốc Treo Máy x2 trong 30 phút.`);
+    renderShopTab();
+    updateAppUI();
+    SaveManager.save();
+}
+
+// Skin thời trang (cosmetic) — chỉ đổi màu hào quang nhân vật, không đổi chỉ số.
+const SKINS = [
+    { id: 0, name: "Mặc Định", color: null, cost: 0 },
+    { id: 1, name: "Hắc Vụ", color: 0x1e293b, cost: 15 },
+    { id: 2, name: "Hoàng Kim", color: 0xf59e0b, cost: 15 },
+    { id: 3, name: "Băng Giá", color: 0x38bdf8, cost: 15 },
+    { id: 4, name: "Huyết Nguyệt", color: 0xb91c1c, cost: 15 }
+];
+function buySkin(id) {
+    const skin = SKINS.find(s => s.id === id);
+    if (!skin) return;
+    if (!gameState.ownedSkins.includes(id)) {
+        if (gameState.gems < skin.cost) { addCombatLog("[Thương Hội] Không đủ Tinh Thạch."); return; }
+        gameState.gems -= skin.cost;
+        gameState.ownedSkins.push(id);
+        addCombatLog(`[Thương Hội] Đã mua Skin [${skin.name}].`);
+    }
+    gameState.skinId = id;
+    if (renderEngine) renderEngine.updatePlayerAppearance();
+    soundEngine.playUpgrade();
+    renderShopTab();
+    SaveManager.save();
+}
+
+function renderShopTab() {
+    const gemsEl = document.getElementById('txt-gems');
+    if (gemsEl) gemsEl.innerText = `💎 ${gameState.gems}`;
+
+    const bpContainer = document.getElementById('battlepass-list');
+    if (bpContainer) {
+        bpContainer.innerHTML = BATTLEPASS_TIERS.map(t => {
+            const claimed = gameState.battlePassClaimed.includes(t.chapter);
+            const ready = gameState.chapter > t.chapter && !claimed;
+            let label = claimed ? 'ĐÃ NHẬN' : (ready ? 'NHẬN' : 'CHƯA MỞ');
+            return `
+            <div class="zone-item">
+                <div>
+                    <div class="zone-name">Chapter ${t.chapter}</div>
+                    <div class="zone-desc">${t.label}</div>
+                </div>
+                <button class="btn-action" style="width:auto; padding:4px 8px;" ${ready ? '' : 'disabled'} onclick="claimBattlePass(${t.chapter})">${label}</button>
+            </div>`;
+        }).join('');
+    }
+
+    const boostBtn = document.getElementById('btn-speedboost');
+    if (boostBtn) {
+        if (gameState.speedBoostUntil && Date.now() < gameState.speedBoostUntil) {
+            const minsLeft = Math.ceil((gameState.speedBoostUntil - Date.now()) / 60000);
+            boostBtn.innerText = `ĐANG HOẠT ĐỘNG (${minsLeft} phút)`;
+        } else {
+            boostBtn.innerText = `KÍCH HOẠT (${SPEEDBOOST_COST} 💎)`;
+        }
+    }
+
+    const skinContainer = document.getElementById('skin-list');
+    if (skinContainer) {
+        skinContainer.innerHTML = SKINS.map(s => {
+            const owned = gameState.ownedSkins.includes(s.id);
+            const active = gameState.skinId === s.id;
+            const swatch = s.color !== null ? `#${s.color.toString(16).padStart(6, '0')}` : '#38bdf8';
+            return `
+            <div style="text-align:center; font-size:7px; color:var(--text-muted);">
+                <div onclick="buySkin(${s.id})" style="width:28px; height:28px; border-radius:50%; background:${swatch}; border:2px solid ${active ? 'var(--accent-blue)' : 'transparent'}; cursor:pointer; margin:0 auto 2px;"></div>
+                ${s.name}${owned ? '' : ` (${s.cost}💎)`}
+            </div>`;
+        }).join('');
+    }
+}
+
+function renderNPCList() {
+    const container = document.getElementById('npc-list');
+    if (!container) return;
+
+    container.innerHTML = NPC_DEFINITIONS.map(npc => `
+        <div class="npc-item">
+            <div class="npc-info">
+                <span class="npc-name">${npc.name} (${gameState.npcsUnlocked[npc.id] ? 'Đã kích hoạt' : 'Khóa'})</span>
+                <span class="npc-buff">${npc.buff}</span>
+            </div>
+            <button class="btn-action" style="width: auto; padding: 4px 8px;" 
+                ${gameState.npcsUnlocked[npc.id] ? 'disabled' : ''} 
+                onclick="unlockNPC(${npc.id})">
+                ${gameState.npcsUnlocked[npc.id] ? 'ĐÃ MỞ' : `MỞ (${npc.cost} Data)`}
+            </button>
+        </div>
+    `).join('');
+}
+
+function upgradeZombieLevel() {
+    const cost = getZombieUpgradeCost();
+    if (gameState.resources.wood >= cost) {
+        gameState.resources.wood -= cost;
+        gameState.zombieLvl++;
+        soundEngine.playUpgrade();
+        addCombatLog(`Tăng cấp Zombie Bầy Đàn -> Cấp ${gameState.zombieLvl}`);
+        updateAppUI();
+        SaveManager.save();
+    }
+}
+
+// Mục 6 - Dây chuyền chế tạo Cơ Khí, đúng thiết kế 3 bước tuần tự (trước đây chỉ có
+// 1 nút gộp thẳng thành phẩm). Mỗi bước tiêu nguyên liệu thô + bán thành phẩm bước trước.
+// BƯỚC 1: Khung Kim Loại — BUGFIX: trước đây "ore" (Quặng) không có nơi tiêu nào trong
+// toàn bộ game, nay dùng làm nguyên liệu khung.
+function craftMechFrame() {
+    if (gameState.resources.scrap >= 5 && gameState.resources.ore >= 3) {
+        gameState.resources.scrap -= 5;
+        gameState.resources.ore -= 3;
+        gameState.mechChain.frames++;
+        soundEngine.playUpgrade();
+        addCombatLog("[Cơ Khí Bước 1/3] Chế tạo thành công 1x Khung Kim Loại.");
+        updateAppUI();
+        SaveManager.save();
+    }
+}
+// BƯỚC 2: Mạch Điều Khiển — tiêu 1 Khung (bán thành phẩm bước 1) + Linh Kiện (comp).
+function craftMechCircuit() {
+    if (gameState.mechChain.frames >= 1 && gameState.resources.comp >= 5) {
+        gameState.mechChain.frames--;
+        gameState.resources.comp -= 5;
+        gameState.mechChain.circuits++;
+        soundEngine.playUpgrade();
+        addCombatLog("[Cơ Khí Bước 2/3] Chế tạo thành công 1x Mạch Điều Khiển.");
+        updateAppUI();
+        SaveManager.save();
+    }
+}
+// BƯỚC 3: Lắp Ráp Bot Tự Động — tiêu 1 Mạch (bán thành phẩm bước 2) + Dữ Liệu (data),
+// ra thành phẩm cuối cùng cộng thẳng vào điểm HW/SW.
+function craftSwarmBot() {
+    if (gameState.mechChain.circuits >= 1 && gameState.resources.data >= 5) {
+        gameState.mechChain.circuits--;
+        gameState.resources.data -= 5;
+        gameState.hwPoints += 5;
+        gameState.swPoints += 5;
+        soundEngine.playUpgrade();
+        addCombatLog("[Cơ Khí Bước 3/3] Lắp ráp thành công 1x Bot Tự Động (+5 HW / +5 SW)");
+        updateAppUI();
+        SaveManager.save();
+    }
+}
+function renderMechChainUI() {
+    const f = document.getElementById('txt-mech-frames');
+    if (f) f.innerText = gameState.mechChain.frames;
+    const c = document.getElementById('txt-mech-circuits');
+    if (c) c.innerText = gameState.mechChain.circuits;
+}
+
+function unlockNPC(id) {
+    const npc = NPC_DEFINITIONS.find(n => n.id === id);
+    if (npc && gameState.resources.data >= npc.cost) {
+        gameState.resources.data -= npc.cost;
+        gameState.npcsUnlocked[id] = true;
+        soundEngine.playUpgrade();
+        addCombatLog(`Đồng hành [${npc.name}] đã tham gia đội hình!`);
+        updateAppUI();
+        SaveManager.save();
+    }
+}
+
+function triggerBossBattle() {
+    if (renderEngine) {
+        renderEngine.spawnBoss();
+        addCombatLog(`Bắt đầu giao chiến Boss Chapter ${gameState.chapter}!`);
+    }
+}
+
+// ==========================================
+// 8. INITIALIZATION & MAIN GAME LOOP
+// ==========================================
+let renderEngine = null;
+let skillTreeEngine = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+    SaveManager.load();
+
+    renderEngine = new RenderEngine3D();
+    skillTreeEngine = new SkillTreeEngine();
+    renderEngine.setWorldZone(gameState.currentWorld);
+
+    const chkAuto = document.getElementById('chk-auto-battle');
+    if (chkAuto) chkAuto.checked = !!gameState.autoBattle;
+    const chkAutoClaim = document.getElementById('chk-auto-claim');
+    if (chkAutoClaim) chkAutoClaim.checked = !!gameState.autoClaim;
+
+    updateAppUI();
+    if (window.pendingOfflineReport) showOfflineSummary();
+
+    // Render Loop (60 FPS)
+    function animLoop() {
+        if (renderEngine) renderEngine.render();
+        requestAnimationFrame(animLoop);
+    }
+    requestAnimationFrame(animLoop);
+
+    // Resource Auto-Generator Tick (1 sec) — dùng chung công thức getResourceRates()
+    // với offline calc để 2 đường tính không bao giờ lệch nhau.
+    setInterval(() => {
+        const rates = getResourceRates();
+        gameState.resources.wood += rates.wood;
+        gameState.resources.stone += rates.stone;
+        gameState.resources.ore += rates.ore;
+        gameState.resources.ruins += rates.ruins;
+        gameState.resources.gene += rates.gene;
+        gameState.resources.scrap += rates.scrap;
+        gameState.resources.data += rates.data;
+
+        autoClaimTick();
+        updateAppUI();
+    }, CONFIG.RESOURCE_TICK);
+
+    // Auto-Save Tick (10 sec)
+    setInterval(() => {
+        SaveManager.save();
+    }, 10000);
+
+    // Save immediately when the user leaves/backgrounds the app so the
+    // offline timestamp is accurate for the idle-progress calculation.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) SaveManager.save();
+    });
+    window.addEventListener('pagehide', () => SaveManager.save());
+
+    // Service Worker cho PWA shell (mục 9.1). Ưu tiên đăng ký file thật './sw.js'
+    // (bắt buộc khi deploy thật lên server vì scope của SW từ blob: bị giới hạn
+    // chỉ áp dụng cho tab hiện tại). Nếu không tìm thấy file (đang mở như 1 file
+    // HTML đơn lẻ, không kèm sw.js), tự động rơi về bản inline blob để vẫn hoạt động.
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {
+            const swCode = `
+                const CACHE = 'zc-shell-v1';
+                self.addEventListener('install', e => {
+                    self.skipWaiting();
+                });
+                self.addEventListener('activate', e => {
+                    self.clients.claim();
+                });
+                self.addEventListener('fetch', e => {
+                    if (e.request.method !== 'GET') return;
+                    e.respondWith(
+                        caches.open(CACHE).then(cache =>
+                            cache.match(e.request).then(cached => {
+                                const fetchPromise = fetch(e.request).then(res => {
+                                    if (res && res.status === 200) cache.put(e.request, res.clone());
+                                    return res;
+                                }).catch(() => cached);
+                                return cached || fetchPromise;
+                            })
+                        )
+                    );
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(err => console.warn('SW registration (blob fallback) failed:', err));
+        });
+    }
+});
+</script>
+</body>
+</html>
