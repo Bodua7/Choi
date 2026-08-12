@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+
+# Project Android được workflow build-apk.yml tự sinh ra mỗi lần chạy CI (npx cap add
+# android) — không commit vào git. Nếu sau này cần tùy biến sâu (icon, splash, quyền
+# Android riêng...), bỏ dòng dưới, chạy `npx cap add android` một lần rồi commit thư
+# mục android/ thật để giữ nguyên chỉnh sửa.
+android/
+
+*.apk

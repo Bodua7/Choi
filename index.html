@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Zombie Stickman Idle PWA</title>
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- TOP BAR: Tài Nguyên -->
+        <header id="top-bar">
+            <div class="res-item">Gỗ: <span id="res-wood">0</span></div>
+            <div class="res-item">Đá: <span id="res-stone">0</span></div>
+            <div class="res-item">Lõi: <span id="res-core">0</span></div>
+            <div class="res-item">Tinh Thạch: <span id="res-crystal">0</span></div>
+        </header>
+
+        <!-- TRẠNG THÁI BẦY + NHẬT KÝ (thay viewport 3D bằng text) -->
+        <main id="swarm-status">
+            <div id="swarm-summary"></div>
+            <ul id="combat-log"></ul>
+        </main>
+
+        <!-- OFFLINE GAIN TOAST -->
+        <div id="offline-toast" class="offline-toast hidden"></div>
+
+        <!-- THÀNH TỰU MỞ KHÓA TOAST -->
+        <div id="achievement-toast" class="achievement-toast hidden"></div>
+
+        <!-- TAB CONTENT PANEL (trượt lên khi chọn tab) -->
+        <section id="tab-content-panel" class="tab-content-panel hidden">
+            <div id="tab-content"></div>
+        </section>
+
+        <!-- FLOATING BUTTON -->
+        <button id="btn-sweep" class="floating-btn">QUÉT SẠCH - SWEEP ALL</button>
+
+        <!-- TAB NAVIGATION MENU -->
+        <nav id="tab-navigation">
+            <button class="tab-btn active" data-tab="base">Căn Cứ</button>
+            <button class="tab-btn" data-tab="skill">Kỹ Năng</button>
+            <button class="tab-btn" data-tab="forge">Rèn</button>
+            <button class="tab-btn" data-tab="dungeon">Phó Bản</button>
+            <button class="tab-btn" data-tab="shop">Shop</button>
+            <button class="tab-btn" data-tab="social">Nhiều Người</button>
+            <button class="tab-btn" data-tab="other">Khác</button>
+        </nav>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
