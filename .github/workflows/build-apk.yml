@@ -16,10 +16,25 @@ jobs:
       - name: Checkout mã nguồn
         uses: actions/checkout@v4
 
+      - name: Giải nén file .zip nguồn (nếu bạn push code dưới dạng 1 file zip thay vì rời từng file)
+        # Tự tìm file .zip đầu tiên ở gốc repo (vd zombie-commander-cyber-ascension.zip)
+        # và giải nén đè vào gốc repo, để package.json/src/index.html... nằm đúng chỗ
+        # cho các bước bên dưới dùng. Nếu bạn đã push source rời (không có file .zip
+        # nào ở gốc repo) thì bước này tự bỏ qua, không lỗi.
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -iname "*.zip" | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Tìm thấy $ZIP_FILE — đang giải nén..."
+            unzip -o "$ZIP_FILE" -d .
+          else
+            echo "Không có file .zip ở gốc repo — bỏ qua, dùng source rời sẵn có."
+          fi
+
       - name: Cài Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Cài dependency web (Vite + Capacitor)
         run: npm install
