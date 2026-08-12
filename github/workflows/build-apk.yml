@@ -1,0 +1,60 @@
+name: Build APK
+
+# Chạy khi push lên main, khi tạo Pull Request, hoặc bấm "Run workflow" thủ công
+# trong tab Actions trên GitHub.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Cài dependency web (Vite + Capacitor)
+        run: npm install
+
+      - name: Build web app (vite build -> dist/)
+        # Supabase là optional (getSupabase() tự lazy-init, không throw khi thiếu env) —
+        # điền 2 Secret dưới đây trong Settings > Secrets and variables > Actions nếu
+        # muốn Bảng Xếp Hạng/Boss TG/Đấu Trường hoạt động thật trong bản APK.
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Cài JDK 17 (bắt buộc cho Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Tạo project Android qua Capacitor (dùng dist/ vừa build làm webDir)
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Cấp quyền chạy cho gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build APK debug (chưa cần keystore ký release)
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Tải APK lên (xem ở tab Actions > Summary > Artifacts sau khi chạy xong)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zombie-commander-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
