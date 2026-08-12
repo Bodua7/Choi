@@ -47,11 +47,11 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: Cài JDK 17 (bắt buộc cho Gradle/Android)
+      - name: Cài JDK 21 (bắt buộc cho Gradle/Android - capacitor-android yêu cầu source release 21)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Tạo project Android qua Capacitor (dùng dist/ vừa build làm webDir)
         run: |
