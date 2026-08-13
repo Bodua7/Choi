@@ -8,7 +8,7 @@ on:
 env:
   # Đổi tên nếu bạn đặt tên file khác khi upload lên repo
   PROJECT_ZIP: tam-gioi-android-wrapper.zip
-  WEB_ZIP: tam-gioi-tan-the-playable-polished.zip
+  WEB_ZIP: a-tun-playable.zip
 
 jobs:
   build:
@@ -48,6 +48,6 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tam-gioi-tan-the-debug-apk
+          name: a-tun-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
