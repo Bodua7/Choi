@@ -1,73 +1,45 @@
 name: Build APK
 
-# Chạy khi push lên main, khi tạo Pull Request, hoặc bấm "Run workflow" thủ công
-# trong tab Actions trên GitHub.
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch: {}
+
+env:
+  # Đổi tên/đường dẫn này nếu file zip game nằm chỗ khác trong repo
+  WEB_ZIP: tam-gioi-tan-the-playable-polished.zip
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout mã nguồn
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Giải nén file .zip nguồn (nếu bạn push code dưới dạng 1 file zip thay vì rời từng file)
-        # Tự tìm file .zip đầu tiên ở gốc repo (vd zombie-commander-cyber-ascension.zip)
-        # và giải nén đè vào gốc repo, để package.json/src/index.html... nằm đúng chỗ
-        # cho các bước bên dưới dùng. Nếu bạn đã push source rời (không có file .zip
-        # nào ở gốc repo) thì bước này tự bỏ qua, không lỗi.
-        run: |
-          ZIP_FILE=$(find . -maxdepth 1 -iname "*.zip" | head -n 1)
-          if [ -n "$ZIP_FILE" ]; then
-            echo "Tìm thấy $ZIP_FILE — đang giải nén..."
-            unzip -o "$ZIP_FILE" -d .
-          else
-            echo "Không có file .zip ở gốc repo — bỏ qua, dùng source rời sẵn có."
-          fi
-
-      - name: Cài Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Cài dependency web (Vite + Capacitor)
-        run: npm install
-
-      - name: Build web app (vite build -> dist/)
-        # Supabase là optional (getSupabase() tự lazy-init, không throw khi thiếu env) —
-        # điền 2 Secret dưới đây trong Settings > Secrets and variables > Actions nếu
-        # muốn Bảng Xếp Hạng/Boss TG/Đấu Trường hoạt động thật trong bản APK.
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npm run build
-
-      - name: Cài JDK 21 (bắt buộc cho Gradle/Android - capacitor-android yêu cầu source release 21)
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
-      - name: Tạo project Android qua Capacitor (dùng dist/ vừa build làm webDir)
+      - name: Giải nén file zip game vào assets/www
         run: |
-          npx cap add android
-          npx cap sync android
+          rm -rf app/src/main/assets/www
+          mkdir -p app/src/main/assets/www
+          unzip -o "${{ env.WEB_ZIP }}" -d app/src/main/assets/www
+          echo "--- Nội dung assets/www ---"
+          find app/src/main/assets/www -maxdepth 2
 
-      - name: Cấp quyền chạy cho gradlew
-        run: chmod +x android/gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
 
-      - name: Build APK debug (chưa cần keystore ký release)
-        working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
 
-      - name: Tải APK lên (xem ở tab Actions > Summary > Artifacts sau khi chạy xong)
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: zombie-commander-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          name: tam-gioi-tan-the-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
