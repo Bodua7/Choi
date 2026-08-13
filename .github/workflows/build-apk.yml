@@ -6,7 +6,8 @@ on:
   workflow_dispatch: {}
 
 env:
-  # Đổi tên/đường dẫn này nếu file zip game nằm chỗ khác trong repo
+  # Đổi tên nếu bạn đặt tên file khác khi upload lên repo
+  PROJECT_ZIP: tam-gioi-android-wrapper.zip
   WEB_ZIP: tam-gioi-tan-the-playable-polished.zip
 
 jobs:
@@ -21,6 +22,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Giải nén project Android (app/, build.gradle, ...) ra repo root
+        run: |
+          unzip -o "${{ env.PROJECT_ZIP }}" -d .
+          echo "--- Repo root sau khi giải nén ---"
+          ls -la
 
       - name: Giải nén file zip game vào assets/www
         run: |
@@ -43,3 +50,4 @@ jobs:
         with:
           name: tam-gioi-tan-the-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
