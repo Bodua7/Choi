@@ -3,18 +3,14 @@ name: Build APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: {}
-
-env:
-  # Đổi tên nếu bạn đặt tên file khác khi upload lên repo
-  PROJECT_ZIP: tam-gioi-android-wrapper.zip
-  WEB_ZIP: a-tun-playable.zip
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -23,24 +19,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Giải nén project Android (app/, build.gradle, ...) ra repo root
-        run: |
-          unzip -o "${{ env.PROJECT_ZIP }}" -d .
-          echo "--- Repo root sau khi giải nén ---"
-          ls -la
-
-      - name: Giải nén file zip game vào assets/www
-        run: |
-          rm -rf app/src/main/assets/www
-          mkdir -p app/src/main/assets/www
-          unzip -o "${{ env.WEB_ZIP }}" -d app/src/main/assets/www
-          echo "--- Nội dung assets/www ---"
-          find app/src/main/assets/www -maxdepth 2
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.7
+          gradle-version: 8.9
+
+      - name: Unzip web source into assets
+        run: |
+          mkdir -p app/src/main/assets/www
+          unzip -o app/web-source.zip -d app/src/main/assets/www
 
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon
@@ -48,6 +35,5 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: a-tun-debug-apk
+          name: MeVuCauSinh-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
-
