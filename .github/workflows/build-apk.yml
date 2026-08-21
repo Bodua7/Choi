@@ -27,7 +27,14 @@ jobs:
       - name: Unzip web source into assets
         run: |
           mkdir -p app/src/main/assets/www
-          unzip -o app/web-source.zip -d app/src/main/assets/www
+          ZIP_FILE=$(find app -maxdepth 1 -iname "*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Không tìm thấy file .zip trong thư mục app/"
+            ls -la app/
+            exit 1
+          fi
+          echo "Dùng file: $ZIP_FILE"
+          unzip -o "$ZIP_FILE" -d app/src/main/assets/www
 
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon
