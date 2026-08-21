@@ -24,23 +24,36 @@ jobs:
         with:
           gradle-version: 8.9
 
-      - name: Unzip web source into assets
+      - name: Giai nen project (lop 1 - toan bo project Android)
         run: |
-          mkdir -p app/src/main/assets/www
-          ZIP_FILE=$(find app -maxdepth 1 -iname "*.zip" | head -n 1)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "Không tìm thấy file .zip trong thư mục app/"
-            ls -la app/
+          PROJECT_ZIP=$(find . -maxdepth 1 -iname "*.zip" | head -n 1)
+          if [ -z "$PROJECT_ZIP" ]; then
+            echo "Khong tim thay file .zip nao o goc repo. Danh sach file hien co:"
+            find . -not -path "./.git/*" -not -path "./.github/*"
             exit 1
           fi
-          echo "Dùng file: $ZIP_FILE"
-          unzip -o "$ZIP_FILE" -d app/src/main/assets/www
+          echo "Giai nen project tu: $PROJECT_ZIP"
+          mkdir -p build-workspace
+          unzip -o "$PROJECT_ZIP" -d build-workspace
+
+      - name: Giai nen web source (lop 2 - game assets)
+        run: |
+          WEB_ZIP=$(find build-workspace/app -maxdepth 1 -iname "*.zip" | head -n 1)
+          if [ -z "$WEB_ZIP" ]; then
+            echo "Khong tim thay file .zip game trong build-workspace/app/. Noi dung app/:"
+            ls -la build-workspace/app
+            exit 1
+          fi
+          echo "Giai nen web source tu: $WEB_ZIP"
+          mkdir -p build-workspace/app/src/main/assets/www
+          unzip -o "$WEB_ZIP" -d build-workspace/app/src/main/assets/www
 
       - name: Build debug APK
+        working-directory: build-workspace
         run: gradle assembleDebug --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: MeVuCauSinh-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: build-workspace/app/build/outputs/apk/debug/app-debug.apk
